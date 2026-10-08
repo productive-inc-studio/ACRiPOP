@@ -222,9 +222,43 @@ const matDatalist = (id) => `<datalist id="${id}">${state.materials.map((m) => `
 const prodDatalist = (id) => `<datalist id="${id}">${state.products.filter((p) => p.active).map((p) => `<option value="${esc(displayProd(p))}">`).join("")}</datalist>`;
 
 // ---------- Excel ----------
+let _hdrKw = null;
+function headerKeywords() {
+  if (_hdrKw) return _hdrKw;
+  const set = new Set();
+  for (const sp of [...MAT_SPECS, ...PRE_SPECS]) for (const s of sp.syns) { const n = normH(s); if (n.length >= 2) set.add(n); }
+  return (_hdrKw = [...set]);
+}
+// หาแถวหัวตารางอัตโนมัติ (ข้ามแถวหัวข้อ/ว่าง) — เลือกแถวที่ตรงคำหัวคอลัมน์มากสุด
+function detectHeaderRow(aoa) {
+  const kw = headerKeywords(); let best = 0, bi = 0;
+  for (let i = 0; i < Math.min(aoa.length, 20); i++) {
+    let sc = 0;
+    for (const c of aoa[i] || []) { const n = normH(c); if (!n) continue; for (const k of kw) { if (n === k || n.includes(k) || k.includes(n)) { sc++; break; } } }
+    if (sc > best) { best = sc; bi = i; }
+  }
+  return best >= 2 ? bi : 0;
+}
 function readXlsx(file, cb) {
   const reader = new FileReader();
-  reader.onload = (e) => { try { const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" }); cb(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" })); } catch (err) { toast("อ่านไฟล์ไม่สำเร็จ: " + err.message, true); } };
+  reader.onload = (e) => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+      if (!aoa.length) return cb([]);
+      const hi = detectHeaderRow(aoa);
+      const headers = (aoa[hi] || []).map((h) => String(h ?? "").trim());
+      const rows = [];
+      for (let i = hi + 1; i < aoa.length; i++) {
+        const r = aoa[i] || [];
+        if (r.every((c) => c === "" || c == null)) continue;
+        const o = {}; headers.forEach((h, ci) => { if (h) o[h] = r[ci]; });
+        rows.push(o);
+      }
+      cb(rows);
+    } catch (err) { toast("อ่านไฟล์ไม่สำเร็จ: " + err.message, true); }
+  };
   reader.readAsArrayBuffer(file);
 }
 function pick(row, names) {
