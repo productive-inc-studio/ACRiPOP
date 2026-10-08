@@ -231,6 +231,57 @@ function pick(row, names) {
   for (const k of Object.keys(row)) { const nk = String(k).trim().toLowerCase().replace(/\s+/g, ""); for (const n of names) if (nk === n.toLowerCase().replace(/\s+/g, "")) return row[k]; }
   return "";
 }
+// จับคู่หัวคอลัมน์จากความหมาย (คำพ้อง/คำใกล้เคียง) — แต่ละคอลัมน์ถูกจับได้ 1 ฟิลด์
+const normH = (s) => String(s).trim().toLowerCase().replace(/[\s._\-/()%|฿]/g, "");
+function matchColumns(keys, specs) {
+  const nkeys = keys.map((k) => ({ k, n: normH(k) })).filter((x) => x.n);
+  const pairs = [];
+  for (let si = 0; si < specs.length; si++) {
+    const sp = specs[si];
+    for (const { k, n } of nkeys) {
+      let sc = 0;
+      for (const syn of sp.syns) { const ns = normH(syn); if (!ns) continue; if (n === ns) sc = Math.max(sc, 1000); else if (n.includes(ns)) sc = Math.max(sc, 500 + ns.length); else if (ns.includes(n)) sc = Math.max(sc, 200 + n.length); }
+      if (sc > 0) pairs.push({ field: sp.field, k, sc, si });
+    }
+  }
+  // เลือกคู่ที่คะแนนสูงสุดก่อน (ตรงเป๊ะชนะ) — ฟิลด์เฉพาะเจาะจงชนะเมื่อคะแนนเท่ากัน
+  pairs.sort((a, b) => b.sc - a.sc || a.si - b.si);
+  const usedK = new Set(), usedF = new Set(), map = {};
+  for (const p of pairs) { if (usedK.has(p.k) || usedF.has(p.field)) continue; map[p.field] = p.k; usedK.add(p.k); usedF.add(p.field); }
+  return map;
+}
+const cell = (row, map, field) => (field in map ? row[map[field]] : "");
+const sStr = (v) => String(v ?? "").trim();
+const nNum = (v) => { const n = Number(String(v ?? "").replace(/[, ฿]/g, "")); return isFinite(n) ? n : 0; };
+function findExistingMat(code, name) {
+  const c = (code || "").trim().toLowerCase(), nm = (name || "").trim().toLowerCase();
+  return (c && state.materials.find((m) => (m.code || "").toLowerCase() === c)) || (nm && state.materials.find((m) => m.name.toLowerCase() === nm)) || null;
+}
+const MAT_SPECS = [
+  { field: "code", syns: ["รหัสวัสดุ", "รหัสสินค้า", "รหัส", "sku", "code", "รหัสสกุ", "บาร์โค้ด", "barcode", "id"] },
+  { field: "category", syns: ["หมวดหมู่", "หมวด", "ประเภท", "ชนิด", "กลุ่ม", "category", "type", "group"] },
+  { field: "name", syns: ["ชื่อวัสดุ", "ชื่อรายการ", "ชื่อสินค้า", "ชื่ออะไหล่", "รายการ", "ชื่อ", "วัสดุ", "อะไหล่", "สินค้า", "name", "item", "material", "product", "รายละเอียด", "description"] },
+  { field: "purchase_unit", syns: ["หน่วยซื้อ", "หน่วยสั่งซื้อ", "หน่วยใหญ่", "หน่วยบรรจุ", "purchaseunit", "packunit", "buyunit"] },
+  { field: "use_unit", syns: ["หน่วยใช้ผลิต", "หน่วยใช้", "หน่วยย่อย", "หน่วยนับ", "หน่วย", "unit", "uom"] },
+  { field: "units_per_purchase", syns: ["ตัวแปลง", "จำนวนต่อหน่วยซื้อ", "จำนวนต่อแพ็ค", "ปริมาณต่อแพ็ค", "ต่อแพ็ค", "แปลงหน่วย", "conversion", "perpack", "ratio"] },
+  { field: "reorder_point", syns: ["จุดเตือน", "จุดสั่งซื้อ", "สต๊อกขั้นต่ำ", "สต็อกขั้นต่ำ", "ขั้นต่ำ", "reorder", "minstock", "min"] },
+  { field: "buy_price", syns: ["ราคาต่อหน่วยซื้อ", "ราคาต่อหน่วย", "ราคาซื้อ", "ราคาทุน", "ราคาต้นทุน", "ต้นทุนต่อหน่วย", "ต้นทุน/หน่วย", "ต้นทุน", "ราคา", "unitprice", "costprice", "price", "cost"] },
+  { field: "buy_qty", syns: ["จำนวนซื้อ", "จำนวนเริ่มต้น", "จำนวนที่ซื้อ", "ปริมาณ", "จำนวน", "สต๊อก", "สต็อก", "คงเหลือ", "qty", "quantity", "stock"] },
+];
+const PRE_SPECS = [
+  { field: "ref", syns: ["อ้างอิง", "เลขออเดอร์", "เลขที่ออเดอร์", "เลขที่", "เลขบิล", "orderno", "orderid", "order", "ref", "po", "บิล", "invoice"] },
+  { field: "date", syns: ["วันที่", "วันขาย", "วันที่ขาย", "date", "orderdate", "saledate"] },
+  { field: "channel", syns: ["ช่องทางขาย", "ช่องทาง", "channel", "platform", "แพลตฟอร์ม", "ร้าน", "market", "marketplace"] },
+  { field: "sku", syns: ["sku", "skucode", "รหัสสินค้า", "รหัสสกุ", "รหัส", "code", "บาร์โค้ด", "barcode"] },
+  { field: "name", syns: ["ชื่อสินค้า", "ชื่อรายการ", "รายการ", "ชื่อ", "สินค้า", "name", "item", "product"] },
+  { field: "qty", syns: ["จำนวนสั่ง", "จำนวน", "ปริมาณ", "ชิ้น", "qty", "quantity", "amount"] },
+  { field: "price", syns: ["ราคาขาย", "ราคาต่อชิ้น", "ราคาต่อหน่วย", "ราคา/ชิ้น", "ราคา", "unitprice", "sellprice", "price"] },
+  { field: "shipping", syns: ["ค่าส่ง", "ค่าจัดส่ง", "ค่าขนส่ง", "shipping", "freight", "delivery"] },
+  { field: "fee", syns: ["ค่าธรรมเนียม", "ค่าคอม", "คอมมิชชั่น", "fee", "commission"] },
+  { field: "discount", syns: ["ส่วนลด", "ลด", "discount"] },
+];
+const FIELD_LABEL = { code: "รหัส", category: "หมวด", name: "ชื่อ", purchase_unit: "หน่วยซื้อ", use_unit: "หน่วยใช้", units_per_purchase: "ตัวแปลง", reorder_point: "จุดเตือน", buy_price: "ราคา", buy_qty: "จำนวน", ref: "อ้างอิง", date: "วันที่", channel: "ช่องทาง", sku: "SKU", qty: "จำนวน", price: "ราคาขาย", shipping: "ค่าส่ง", fee: "ค่าธรรมเนียม", discount: "ส่วนลด" };
+const mappingNote = (map) => { const e = Object.entries(map); return e.length ? `<p class="page-sub">จับคู่คอลัมน์: ${e.map(([f, k]) => `<b>${esc(k)}</b>→${FIELD_LABEL[f] || f}`).join(" · ")}</p>` : ""; };
 function downloadSheet(filename, aoa, sheetName) {
   const ws = XLSX.utils.aoa_to_sheet(aoa), wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName); XLSX.writeFile(wb, filename);
@@ -438,14 +489,20 @@ function importMatModal() {
   document.getElementById("matFile").addEventListener("change", (e) => {
     const f = e.target.files[0]; if (!f) return;
     readXlsx(f, (rows) => {
+      if (!rows.length) { document.getElementById("matImportPreview").innerHTML = `<p class="page-sub" style="color:var(--red)">ไฟล์ว่าง</p>`; return; }
+      const map = matchColumns(Object.keys(rows[0]), MAT_SPECS);
       matImportRows = rows.map((r) => ({
-        code: String(pick(r, ["รหัส", "รหัสวัสดุ", "code", "sku"])).trim(), name: String(pick(r, ["ชื่อวัสดุ", "ชื่อ", "name"])).trim(),
-        category: String(pick(r, ["หมวด", "หมวดหมู่", "ชนิด", "category"])).trim(), use_unit: String(pick(r, ["หน่วยใช้", "หน่วยใช้ผลิต", "หน่วย", "use_unit"])).trim(),
-        purchase_unit: String(pick(r, ["หน่วยซื้อ", "purchase_unit"])).trim(), units_per_purchase: Number(pick(r, ["ตัวแปลง", "units_per_purchase", "conv"])) || 1,
-        reorder_point: Number(pick(r, ["จุดเตือน", "reorder"])) || 0, buy_qty: Number(pick(r, ["จำนวนซื้อ", "จำนวน", "qty"])) || 0, buy_price: Number(pick(r, ["ราคาต่อหน่วยซื้อ", "ราคา", "price"])) || 0,
-      })).filter((r) => r.name);
-      const prev = matImportRows.slice(0, 50).map((r) => `<tr><td>${esc(r.code)}</td><td>${esc(r.name)}</td><td>${esc(r.category)}</td><td>${esc(r.use_unit || "ชิ้น")}</td><td class="num">${r.buy_qty || ""}</td><td class="num">${r.buy_price ? money(r.buy_price) : ""}</td></tr>`).join("");
-      document.getElementById("matImportPreview").innerHTML = matImportRows.length ? `<p class="page-sub">พบ <b>${matImportRows.length}</b> รายการ (แสดง ${Math.min(50, matImportRows.length)} แถวแรก)</p><div class="table-wrap" style="max-height:260px;overflow:auto"><table><thead><tr><th>รหัส</th><th>ชื่อ</th><th>หมวด</th><th>หน่วย</th><th class="num">ซื้อ</th><th class="num">ราคา</th></tr></thead><tbody>${prev}</tbody></table></div>` : `<p class="page-sub" style="color:var(--red)">ไม่พบรายการที่มี “ชื่อวัสดุ”</p>`;
+        code: sStr(cell(r, map, "code")), name: sStr(cell(r, map, "name")), category: sStr(cell(r, map, "category")),
+        use_unit: sStr(cell(r, map, "use_unit")), purchase_unit: sStr(cell(r, map, "purchase_unit")),
+        units_per_purchase: nNum(cell(r, map, "units_per_purchase")) || 1, reorder_point: nNum(cell(r, map, "reorder_point")),
+        buy_qty: nNum(cell(r, map, "buy_qty")), buy_price: nNum(cell(r, map, "buy_price")),
+      })).filter((r) => r.name || r.code);
+      matImportRows.forEach((r) => { const ex = findExistingMat(r.code, r.name); r._exist = ex ? ex.id : null; });
+      const nNew = matImportRows.filter((r) => !r._exist).length, nMatch = matImportRows.length - nNew;
+      const prev = matImportRows.slice(0, 50).map((r) => `<tr><td>${r._exist ? '<span class="pill gray">มีอยู่</span>' : '<span class="pill green">ใหม่</span>'}</td><td>${esc(r.code)}</td><td>${esc(r.name)}</td><td>${esc(r.category)}</td><td>${esc(r.use_unit || "ชิ้น")}</td><td class="num">${r.buy_qty || ""}</td><td class="num">${r.buy_price ? money(r.buy_price) : ""}</td></tr>`).join("");
+      document.getElementById("matImportPreview").innerHTML = matImportRows.length
+        ? `${mappingNote(map)}<p class="page-sub">พบ <b>${matImportRows.length}</b> รายการ — ใหม่ ${nNew}${nMatch ? ` • ตรงกับของเดิม ${nMatch} (จะเติมสต๊อก/ราคาให้)` : ""} (แสดง ${Math.min(50, matImportRows.length)} แถวแรก)</p><div class="table-wrap" style="max-height:240px;overflow:auto"><table><thead><tr><th></th><th>รหัส</th><th>ชื่อ</th><th>หมวด</th><th>หน่วย</th><th class="num">ซื้อ</th><th class="num">ราคา</th></tr></thead><tbody>${prev}</tbody></table></div>`
+        : `${mappingNote(map)}<p class="page-sub" style="color:var(--red)">ไม่พบคอลัมน์ชื่อ/รหัส — ตรวจหัวตารางอีกครั้ง</p>`;
       document.getElementById("doImportMat").disabled = matImportRows.length === 0;
     });
   });
@@ -453,13 +510,26 @@ function importMatModal() {
 async function doImportMat() {
   if (!matImportRows.length) return;
   const btn = document.getElementById("doImportMat"); btn.disabled = true; btn.textContent = "กำลังนำเข้า…";
-  let ok = 0, fail = 0;
+  let created = 0, matched = 0, lots = 0, fail = 0;
   for (const r of matImportRows) {
-    const { data, error } = await sb.from("materials").insert({ code: r.code || null, name: r.name, category: r.category || null, use_unit: r.use_unit || "ชิ้น", purchase_unit: r.purchase_unit || null, units_per_purchase: r.units_per_purchase, reorder_point: r.reorder_point }).select().single();
-    if (error) { fail++; continue; } ok++;
-    if (r.buy_qty > 0) await sb.from("material_purchases").insert({ material_id: data.id, purchase_qty: r.buy_qty, purchase_unit_price: r.buy_price });
+    let mid = r._exist;
+    if (!mid) {
+      const { data, error } = await sb.from("materials").insert({ code: r.code || null, name: r.name || r.code, category: r.category || null, use_unit: r.use_unit || "ชิ้น", purchase_unit: r.purchase_unit || null, units_per_purchase: r.units_per_purchase, reorder_point: r.reorder_point }).select().single();
+      if (error) { fail++; continue; }
+      mid = data.id; created++;
+    } else {
+      matched++;
+      // เติมข้อมูลที่ขาดให้วัสดุเดิม (ไม่ทับของเดิมที่มีค่าอยู่แล้ว)
+      const ex = materialById(mid), upd = {};
+      if (r.category && !ex.category) upd.category = r.category;
+      if (r.purchase_unit && !ex.purchase_unit) upd.purchase_unit = r.purchase_unit;
+      if (r.reorder_point && !Number(ex.reorder_point)) upd.reorder_point = r.reorder_point;
+      if (Object.keys(upd).length) await sb.from("materials").update(upd).eq("id", mid);
+    }
+    // ดึงราคา/จำนวนในไฟล์มาเติมสต๊อก (คิดต้นทุนเฉลี่ยให้อัตโนมัติ)
+    if (r.buy_qty > 0) { await sb.from("material_purchases").insert({ material_id: mid, purchase_qty: r.buy_qty, purchase_unit_price: r.buy_price }); lots++; }
   }
-  closeModal(); toast(`นำเข้าสำเร็จ ${ok} รายการ${fail ? ` • ไม่สำเร็จ ${fail}` : ""}`); await loadAll();
+  closeModal(); toast(`นำเข้าสำเร็จ • ใหม่ ${created}${matched ? ` • เติมของเดิม ${matched}` : ""}${lots ? ` • เติมสต๊อก ${lots} ล็อต` : ""}${fail ? ` • ไม่สำเร็จ ${fail}` : ""}`); await loadAll();
 }
 const dlMatTemplate = () => downloadSheet("template-วัสดุ.xlsx", [["รหัส", "ชื่อวัสดุ", "หมวด", "หน่วยใช้", "หน่วยซื้อ", "ตัวแปลง", "จุดเตือน", "จำนวนซื้อ", "ราคาต่อหน่วยซื้อ"], ["M-001", "สายหนัง", "หนัง", "ซม.", "เมตร", 100, 50, 2, 50], ["M-002", "ห่วงกุญแจ", "โลหะ", "ชิ้น", "แพ็ค", 10, 20, 5, 20]], "materials");
 
@@ -728,20 +798,22 @@ function importPreorderModal() {
   document.getElementById("preFile").addEventListener("change", (e) => {
     const f = e.target.files[0]; if (!f) return;
     readXlsx(f, (rows) => {
+      if (!rows.length) { document.getElementById("preImportPreview").innerHTML = `<p class="page-sub" style="color:var(--red)">ไฟล์ว่าง</p>`; return; }
+      const map = matchColumns(Object.keys(rows[0]), PRE_SPECS);
       const groups = {}; let autoIdx = 0; const unknown = new Set();
       for (const r of rows) {
-        const sku = String(pick(r, ["SKU", "รหัส", "รหัสสินค้า", "sku_code"])).trim(), name = String(pick(r, ["ชื่อสินค้า", "ชื่อ", "name"])).trim();
+        const sku = sStr(cell(r, map, "sku")), name = sStr(cell(r, map, "name"));
         if (!sku && !name) continue;
         const prod = resolveProd(sku) || resolveProd(name);
-        const refRaw = String(pick(r, ["อ้างอิง", "เลขออเดอร์", "ref", "order"])).trim(), ref = refRaw || "__auto" + autoIdx++;
-        if (!groups[ref]) groups[ref] = { ref: refRaw || "(ไม่มีเลข)", date: pick(r, ["วันที่", "date"]), channel: String(pick(r, ["ช่องทาง", "channel"])).trim(), shipping: Number(pick(r, ["ค่าส่ง", "shipping"])) || 0, fee: Number(pick(r, ["ค่าธรรมเนียม", "fee"])) || 0, discount: Number(pick(r, ["ส่วนลด", "discount"])) || 0, items: [] };
+        const refRaw = sStr(cell(r, map, "ref")), ref = refRaw || "__auto" + autoIdx++;
+        if (!groups[ref]) groups[ref] = { ref: refRaw || "(ไม่มีเลข)", date: cell(r, map, "date"), channel: sStr(cell(r, map, "channel")), shipping: nNum(cell(r, map, "shipping")), fee: nNum(cell(r, map, "fee")), discount: nNum(cell(r, map, "discount")), items: [] };
         if (!prod) { unknown.add(sku || name); continue; }
-        groups[ref].items.push({ product_id: prod.id, sku: prod.sku_code, qty: Number(pick(r, ["จำนวน", "qty"])) || 1, sale_price: Number(pick(r, ["ราคาขาย", "ราคา", "price"])) || Number(prod.selling_price) });
+        groups[ref].items.push({ product_id: prod.id, sku: prod.sku_code, qty: nNum(cell(r, map, "qty")) || 1, sale_price: nNum(cell(r, map, "price")) || Number(prod.selling_price) });
       }
       preImportGroups = Object.values(groups).filter((g) => g.items.length);
       const totalItems = preImportGroups.reduce((s, g) => s + g.items.length, 0);
       const prev = preImportGroups.slice(0, 30).map((g) => `<tr><td>${esc(g.ref)}</td><td>${esc(g.channel || "-")}</td><td>${g.items.map((i) => esc(i.sku) + "×" + i.qty).join(", ")}</td><td class="num">${money(g.items.reduce((s, i) => s + i.qty * i.sale_price, 0))}</td></tr>`).join("");
-      document.getElementById("preImportPreview").innerHTML = preImportGroups.length ? `<p class="page-sub">พบ <b>${preImportGroups.length}</b> ออเดอร์ (${totalItems} รายการ)${unknown.size ? ` • <span style="color:var(--red)">ข้าม SKU ไม่รู้จัก: ${esc([...unknown].slice(0, 8).join(", "))}</span>` : ""}</p><div class="table-wrap" style="max-height:260px;overflow:auto"><table><thead><tr><th>อ้างอิง</th><th>ช่องทาง</th><th>รายการ</th><th class="num">ยอด</th></tr></thead><tbody>${prev}</tbody></table></div>` : `<p class="page-sub" style="color:var(--red)">ไม่พบรายการที่ใช้ได้ ${unknown.size ? "(SKU ไม่ตรงกับสินค้าในระบบ)" : ""}</p>`;
+      document.getElementById("preImportPreview").innerHTML = preImportGroups.length ? `${mappingNote(map)}<p class="page-sub">พบ <b>${preImportGroups.length}</b> ออเดอร์ (${totalItems} รายการ)${unknown.size ? ` • <span style="color:var(--red)">ข้าม SKU ไม่รู้จัก: ${esc([...unknown].slice(0, 8).join(", "))}</span>` : ""}</p><div class="table-wrap" style="max-height:240px;overflow:auto"><table><thead><tr><th>อ้างอิง</th><th>ช่องทาง</th><th>รายการ</th><th class="num">ยอด</th></tr></thead><tbody>${prev}</tbody></table></div>` : `${mappingNote(map)}<p class="page-sub" style="color:var(--red)">ไม่พบรายการที่ใช้ได้ ${unknown.size ? "(SKU ไม่ตรงกับสินค้าในระบบ)" : ""}</p>`;
       document.getElementById("doImportPre").disabled = preImportGroups.length === 0;
     });
   });
