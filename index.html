@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบหลังบ้าน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+:root {
+  --bg: #f4f5f7; --card: #ffffff; --ink: #1a1d24; --muted: #6b7280; --line: #e5e7eb;
+  --brand: #2f6df6; --brand-dark: #1e51d4; --green: #0f9d58; --green-bg: #e6f4ec;
+  --red: #d93b3b; --red-bg: #fdecec; --amber: #b7791f; --amber-bg: #fdf3e2;
+  --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { font-family: "IBM Plex Sans Thai", system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--ink); font-size: 14px; line-height: 1.5; }
+
+.topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 16px; background: var(--card); border-bottom: 1px solid var(--line); padding: 10px 18px; flex-wrap: wrap; }
+.brand { font-weight: 700; font-size: 17px; color: var(--brand); }
+.tabs { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
+.tab { border: none; background: transparent; cursor: pointer; padding: 8px 14px; border-radius: 8px; font: inherit; font-weight: 600; color: var(--muted); }
+.tab:hover { background: var(--bg); }
+.tab.active { background: var(--brand); color: #fff; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.sync-status { font-size: 12px; color: var(--muted); }
+
+.view { padding: 18px; max-width: 1200px; margin: 0 auto; }
+.loading { padding: 40px; text-align: center; color: var(--muted); }
+.page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 12px; flex-wrap: wrap; }
+.page-head h2 { margin: 0; font-size: 20px; }
+.page-sub { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
+
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.kpi { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); }
+.kpi .label { color: var(--muted); font-size: 12px; }
+.kpi .value { font-size: 22px; font-weight: 700; margin-top: 2px; }
+.kpi .value.green { color: var(--green); } .kpi .value.red { color: var(--red); }
+.kpi .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 18px; }
+.card-head { padding: 12px 16px; border-bottom: 1px solid var(--line); font-weight: 600; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--line); }
+th { font-size: 12px; color: var(--muted); font-weight: 600; background: #fafbfc; }
+tbody tr:hover { background: #fafbfc; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.row-warn { background: var(--amber-bg) !important; }
+.link-cell { color: var(--brand); cursor: pointer; font-weight: 600; }
+.link-cell:hover { text-decoration: underline; }
+
+.pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.pill.green { background: var(--green-bg); color: var(--green); }
+.pill.red { background: var(--red-bg); color: var(--red); }
+.pill.amber { background: var(--amber-bg); color: var(--amber); }
+.pill.gray { background: #eef0f2; color: var(--muted); }
+
+.btn, .btn-ghost, .btn-sm, .btn-danger { font: inherit; cursor: pointer; border-radius: 8px; font-weight: 600; border: 1px solid transparent; }
+.btn { background: var(--brand); color: #fff; padding: 9px 16px; }
+.btn:hover { background: var(--brand-dark); }
+.btn-ghost { background: transparent; border-color: var(--line); color: var(--ink); padding: 8px 12px; }
+.btn-ghost:hover { background: var(--bg); }
+.btn-sm { background: var(--bg); border-color: var(--line); color: var(--ink); padding: 5px 10px; font-size: 13px; }
+.btn-sm:hover { background: #e9ebef; }
+.btn-danger { background: var(--red-bg); color: var(--red); padding: 5px 10px; font-size: 13px; }
+.btn-danger:hover { background: #fbdcdc; }
+
+.kebab-btn { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; padding: 4px 10px; font-size: 16px; line-height: 1; color: var(--ink); }
+.kebab-btn:hover { background: #e9ebef; }
+#kebabPop { position: fixed; z-index: 300; background: var(--card); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.18); min-width: 140px; overflow: hidden; }
+#kebabPop button { display: block; width: 100%; text-align: left; padding: 9px 14px; border: none; background: none; cursor: pointer; font: inherit; }
+#kebabPop button:hover { background: var(--bg); }
+#kebabPop button.danger { color: var(--red); }
+
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.field .hint { font-size: 12px; color: var(--muted); font-weight: 400; }
+input, select, textarea { width: 100%; font: inherit; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-grid .full { grid-column: 1 / -1; }
+.form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.radio-row { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 12px; }
+.radio-row label { display: flex; align-items: center; gap: 6px; font-weight: 500; cursor: pointer; }
+.radio-row input { width: auto; }
+.section-box { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: #fafbfc; margin: 6px 0 12px; }
+.section-box h4 { margin: 0 0 8px; font-size: 14px; }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(15,18,24,.45); display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; z-index: 100; overflow-y: auto; }
+.modal { background: var(--card); border-radius: var(--radius); width: 100%; max-width: 660px; box-shadow: 0 10px 40px rgba(0,0,0,.2); animation: pop .12s ease-out; }
+@keyframes pop { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+.modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--card); border-radius: var(--radius) var(--radius) 0 0; }
+.modal-head h3 { margin: 0; font-size: 17px; }
+.modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--muted); }
+.modal-body { padding: 18px; }
+
+.breakdown { list-style: none; padding: 0; margin: 0; }
+.breakdown li { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px dashed var(--line); gap: 12px; }
+.breakdown li.total { font-weight: 700; border-bottom: none; border-top: 2px solid var(--ink); margin-top: 4px; }
+.breakdown .ro { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.cart-line { display: grid; grid-template-columns: 2fr 70px 90px 90px 30px; gap: 8px; align-items: center; margin-bottom: 8px; }
+.cart-line .ro { text-align: right; font-variant-numeric: tabular-nums; }
+.mini-x { background: var(--red-bg); color: var(--red); border: none; border-radius: 6px; cursor: pointer; width: 28px; height: 30px; font-weight: 700; }
+
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.toolbar select { width: auto; }
+.tb-search { width: 260px; max-width: 100%; }
+.empty { padding: 36px; text-align: center; color: var(--muted); }
+
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 11px 18px; border-radius: 10px; z-index: 400; box-shadow: 0 6px 20px rgba(0,0,0,.25); font-weight: 500; }
+.toast.err { background: var(--red); }
+
+.bars { display: flex; align-items: flex-end; gap: 6px; height: 160px; padding: 10px 4px 0; overflow-x: auto; }
+.bar-col { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 42px; }
+.bar { width: 26px; border-radius: 3px 3px 0 0; }
+.bar.rev { background: #bcd0fb; } .bar.profit { background: var(--brand); }
+.bar-label { font-size: 11px; color: var(--muted); }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); padding: 8px 16px 0; }
+.legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: middle; }
+
+@media (max-width: 620px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .cart-line { grid-template-columns: 2fr 54px 1fr 30px; }
+  .cart-line .hide-sm { display: none; }
+}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand" id="brandName">ระบบหลังบ้าน</div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="stock">สต๊อก</button>
+      <button class="tab" data-tab="sku">SKU</button>
+      <button class="tab" data-tab="pricing">ราคาซื้อขาย</button>
+      <button class="tab" data-tab="waste">วัสดุ &amp; ของเสีย</button>
+      <button class="tab" data-tab="summary">สรุปบัญชี</button>
+    </nav>
+    <div class="topbar-right">
+      <span class="sync-status" id="syncStatus"></span>
+      <button class="btn-ghost" id="refreshBtn" title="รีเฟรชข้อมูล">↻ รีเฟรช</button>
+    </div>
+  </header>
+
+  <main id="view" class="view"><div class="loading">กำลังโหลด…</div></main>
+
+  <div class="modal-overlay" id="modalOverlay" hidden>
+    <div class="modal" id="modal">
+      <div class="modal-head"><h3 id="modalTitle"></h3><button class="modal-close" id="modalClose">✕</button></div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <div id="kebabPop" hidden></div>
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script>
+// การตั้งค่าเชื่อมต่อ Supabase (แก้ได้ที่บล็อกนี้)
+window.APP_CONFIG = {
+  SUPABASE_URL: "https://jsywdxdhycfjdbhgogjs.supabase.co",
+  SUPABASE_KEY: "sb_publishable_lL-DTRdNGCsLuFJlhP-P6A_IGPkV8YN",
+};
+
+/* ===================================================================
+   ระบบหลังบ้านแบรนด์
+=================================================================== */
+const { SUPABASE_URL, SUPABASE_KEY } = window.APP_CONFIG;
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const state = {
+  materials: [], products: [], bom: [], orders: [], items: [], usages: [], settings: {},
+  activeTab: "stock",
+  stockSearch: "", stockCat: "", stockSort: "name_asc",
+};
+
+// ---------- จัดรูปแบบ ----------
+const money = (n) => "฿" + Number(n || 0).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const qty = (n) => Number(n || 0).toLocaleString("th-TH", { maximumFractionDigits: 4 });
+const pct = (n) => (isFinite(n) ? n.toFixed(1) : "0.0") + "%";
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const fmtDate = (d) => new Date(d).toLocaleDateString("th-TH", { day: "2-digit", month: "short", year: "2-digit" });
+const fmtDateTime = (d) => new Date(d).toLocaleString("th-TH", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+const thCmp = (a, b) => String(a ?? "").localeCompare(String(b ?? ""), "th", { numeric: true, sensitivity: "base" });
+
+// ---------- คำนวณต้นทุน ----------
+const bomOf = (pid) => state.bom.filter((b) => b.product_id === pid);
+const materialById = (id) => state.materials.find((m) => m.id === id);
+const productById = (id) => state.products.find((p) => p.id === id);
+const orderById = (id) => state.orders.find((o) => o.id === id);
+const itemsOf = (oid) => state.items.filter((i) => i.order_id === oid);
+function unitMaterialCost(pid) {
+  return bomOf(pid).reduce((s, b) => s + Number(b.qty_per_unit) * Number(materialById(b.material_id)?.avg_cost || 0), 0);
+}
+const unitCost = (p) => unitMaterialCost(p.id) + Number(p.labor_cost) + Number(p.overhead_cost);
+function wasteAdjCost(p) {
+  const w = Number(p.normal_waste_pct) || 0;
+  return w > 0 && w < 100 ? unitCost(p) / (1 - w / 100) : unitCost(p);
+}
+
+// ---------- searchable (datalist) ----------
+const displayMat = (m) => (m.code ? m.code + " · " : "") + m.name;
+const displayProd = (p) => p.sku_code + " · " + p.name;
+function resolveMat(str) {
+  str = (str || "").trim(); if (!str) return null;
+  return state.materials.find((m) => displayMat(m) === str)
+    || state.materials.find((m) => (m.code && m.code.toLowerCase() === str.toLowerCase()) || m.name.toLowerCase() === str.toLowerCase());
+}
+function resolveProd(str) {
+  str = (str || "").trim(); if (!str) return null;
+  return state.products.find((p) => displayProd(p) === str)
+    || state.products.find((p) => p.sku_code.toLowerCase() === str.toLowerCase() || p.name.toLowerCase() === str.toLowerCase());
+}
+const matDatalist = (id) => `<datalist id="${id}">${state.materials.map((m) => `<option value="${esc(displayMat(m))}">`).join("")}</datalist>`;
+const prodDatalist = (id) => `<datalist id="${id}">${state.products.filter((p) => p.active).map((p) => `<option value="${esc(displayProd(p))}">`).join("")}</datalist>`;
+
+// ---------- Excel ----------
+function readXlsx(file, cb) {
+  const reader = new FileReader();
+  reader.onload = (e) => { try { const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" }); cb(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" })); } catch (err) { toast("อ่านไฟล์ไม่สำเร็จ: " + err.message, true); } };
+  reader.readAsArrayBuffer(file);
+}
+function pick(row, names) {
+  for (const k of Object.keys(row)) { const nk = String(k).trim().toLowerCase().replace(/\s+/g, ""); for (const n of names) if (nk === n.toLowerCase().replace(/\s+/g, "")) return row[k]; }
+  return "";
+}
+function downloadSheet(filename, aoa, sheetName) {
+  const ws = XLSX.utils.aoa_to_sheet(aoa), wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName); XLSX.writeFile(wb, filename);
+}
+
+// ---------- UI helpers ----------
+const view = document.getElementById("view");
+let toastTimer;
+function toast(msg, isErr = false) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.className = "toast" + (isErr ? " err" : ""); t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 3000);
+}
+function openModal(title, html) {
+  document.getElementById("modalTitle").textContent = title;
+  document.getElementById("modalBody").innerHTML = html;
+  document.getElementById("modalOverlay").hidden = false;
+}
+function closeModal() { document.getElementById("modalOverlay").hidden = true; document.getElementById("modalBody").innerHTML = ""; }
+document.getElementById("modalClose").onclick = closeModal;
+// หมายเหตุ: คลิกนอก modal จะ "ไม่" ปิดหน้าต่าง (ต้องกด ✕ เท่านั้น) — ข้อมูลที่กรอกไว้จะไม่หาย
+const val = (id) => document.getElementById(id)?.value ?? "";
+
+// ---------- โหลดข้อมูล ----------
+async function loadAll() {
+  setSync("กำลังซิงก์…");
+  try {
+    const [mat, prod, bom, ord, items, usages, settings] = await Promise.all([
+      sb.from("materials").select("*"),
+      sb.from("products").select("*"),
+      sb.from("product_materials").select("*"),
+      sb.from("sales_orders").select("*").order("sold_at", { ascending: false }),
+      sb.from("sales_items").select("*"),
+      sb.from("material_usages").select("*").order("used_at", { ascending: false }),
+      sb.from("app_settings").select("*"),
+    ]);
+    for (const r of [mat, prod, bom, ord, items, usages, settings]) if (r.error) throw r.error;
+    state.materials = mat.data; state.products = prod.data; state.bom = bom.data;
+    state.orders = ord.data; state.items = items.data; state.usages = usages.data;
+    state.settings = {}; for (const s of settings.data) state.settings[s.key] = s.value;
+    const brand = state.settings.brand?.name; if (brand) document.getElementById("brandName").textContent = brand;
+    setSync("ซิงก์ล่าสุด " + new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }));
+    render();
+  } catch (e) { console.error(e); setSync(""); view.innerHTML = `<div class="empty">เชื่อมต่อฐานข้อมูลไม่สำเร็จ<br><small>${esc(e.message || e)}</small></div>`; }
+}
+const setSync = (t) => (document.getElementById("syncStatus").textContent = t);
+
+document.getElementById("tabs").addEventListener("click", (e) => {
+  const btn = e.target.closest(".tab"); if (!btn) return;
+  state.activeTab = btn.dataset.tab;
+  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t === btn));
+  render();
+});
+document.getElementById("refreshBtn").onclick = loadAll;
+function render() { ({ stock: renderStock, sku: renderSKU, pricing: renderPricing, waste: renderWaste, summary: renderSummary }[state.activeTab])(); }
+
+/* ================= หน้า 1: สต๊อก ================= */
+function stockSorter(key) {
+  switch (key) {
+    case "name_desc": return (a, b) => thCmp(b.name, a.name);
+    case "code_asc": return (a, b) => thCmp(a.code, b.code);
+    case "code_desc": return (a, b) => thCmp(b.code, a.code);
+    case "qty_desc": return (a, b) => Number(b.qty_on_hand) - Number(a.qty_on_hand);
+    case "qty_asc": return (a, b) => Number(a.qty_on_hand) - Number(b.qty_on_hand);
+    default: return (a, b) => thCmp(a.name, b.name);
+  }
+}
+function renderStock() {
+  const cats = [...new Set(state.materials.map((m) => m.category).filter(Boolean))].sort(thCmp);
+  let list = state.materials.slice();
+  const q = state.stockSearch.trim().toLowerCase();
+  if (q) list = list.filter((m) => (m.name || "").toLowerCase().includes(q) || (m.code || "").toLowerCase().includes(q));
+  if (state.stockCat) list = list.filter((m) => (m.category || "") === state.stockCat);
+  list.sort(stockSorter(state.stockSort));
+  const totalValue = state.materials.reduce((s, m) => s + Number(m.qty_on_hand) * Number(m.avg_cost), 0);
+  const lowCount = state.materials.filter((m) => Number(m.qty_on_hand) <= Number(m.reorder_point) && Number(m.reorder_point) > 0).length;
+  const rows = list.map((m) => {
+    const low = Number(m.qty_on_hand) <= Number(m.reorder_point) && Number(m.reorder_point) > 0;
+    return `<tr class="${low ? "row-warn" : ""}">
+      <td>${esc(m.code || "")}</td>
+      <td>${esc(m.name)} ${low ? '<span class="pill amber">ใกล้หมด</span>' : ""}</td>
+      <td>${m.category ? `<span class="pill gray">${esc(m.category)}</span>` : ""}</td>
+      <td>${esc(m.use_unit)}</td>
+      <td class="num">${qty(m.qty_on_hand)}</td>
+      <td class="num">${money(m.avg_cost)}</td>
+      <td class="num">${money(Number(m.qty_on_hand) * Number(m.avg_cost))}</td>
+      <td class="num">${qty(m.reorder_point)}</td>
+      <td class="num"><button class="btn-sm" data-act="restock" data-id="${m.id}">+ เติม</button> <button class="btn-sm" data-act="history" data-id="${m.id}">ประวัติ</button> <button class="btn-sm" data-act="edit-mat" data-id="${m.id}">แก้ไข</button></td>
+    </tr>`;
+  }).join("");
+  view.innerHTML = `
+    <div class="page-head">
+      <div><h2>สต๊อกวัสดุ</h2><p class="page-sub">ฐานข้อมูลกลางของวัสดุทั้งหมด • ต้นทุนเฉลี่ยถ่วงน้ำหนักอัปเดตอัตโนมัติ</p></div>
+      <div style="display:flex;gap:8px"><button class="btn-ghost" data-act="import-mat">⬆ นำเข้า Excel</button><button class="btn" data-act="add-mat">+ เพิ่มวัสดุ</button></div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi"><div class="label">จำนวนวัสดุ</div><div class="value">${state.materials.length}</div></div>
+      <div class="kpi"><div class="label">มูลค่าสต๊อกคงเหลือ</div><div class="value">${money(totalValue)}</div></div>
+      <div class="kpi"><div class="label">วัสดุใกล้หมด</div><div class="value ${lowCount ? "red" : ""}">${lowCount}</div></div>
+    </div>
+    <div class="toolbar">
+      <input id="stkSearch" class="tb-search" placeholder="🔍 ค้นหา รหัส/ชื่อวัสดุ" value="${esc(state.stockSearch)}">
+      <select id="stkCat"><option value="">ทุกหมวด</option>${cats.map((c) => `<option value="${esc(c)}" ${state.stockCat === c ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
+      <select id="stkSort">
+        <option value="name_asc" ${state.stockSort === "name_asc" ? "selected" : ""}>ชื่อ ก→ฮ / A→Z</option>
+        <option value="name_desc" ${state.stockSort === "name_desc" ? "selected" : ""}>ชื่อ ฮ→ก / Z→A</option>
+        <option value="code_asc" ${state.stockSort === "code_asc" ? "selected" : ""}>รหัส 0→9 / A→Z</option>
+        <option value="code_desc" ${state.stockSort === "code_desc" ? "selected" : ""}>รหัส 9→0 / Z→A</option>
+        <option value="qty_desc" ${state.stockSort === "qty_desc" ? "selected" : ""}>คงเหลือมาก→น้อย</option>
+        <option value="qty_asc" ${state.stockSort === "qty_asc" ? "selected" : ""}>คงเหลือน้อย→มาก</option>
+      </select>
+      <span class="page-sub">${list.length} รายการ</span>
+    </div>
+    <div class="card"><div class="table-wrap"><table>
+      <thead><tr><th>รหัส</th><th>วัสดุ</th><th>หมวด</th><th>หน่วย</th><th class="num">คงเหลือ</th><th class="num">ต้นทุนเฉลี่ย</th><th class="num">มูลค่าคงเหลือ</th><th class="num">จุดเตือน</th><th class="num"></th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="9" class="empty">${state.materials.length ? "ไม่พบวัสดุที่ค้นหา" : "ยังไม่มีวัสดุ กด “เพิ่มวัสดุ” หรือ “นำเข้า Excel”"}</td></tr>`}</tbody>
+    </table></div></div>`;
+  const s = document.getElementById("stkSearch");
+  s.addEventListener("input", (e) => { state.stockSearch = e.target.value; const pos = e.target.selectionStart; renderStock(); const n = document.getElementById("stkSearch"); n.focus(); n.setSelectionRange(pos, pos); });
+  document.getElementById("stkCat").addEventListener("change", (e) => { state.stockCat = e.target.value; renderStock(); });
+  document.getElementById("stkSort").addEventListener("change", (e) => { state.stockSort = e.target.value; renderStock(); });
+}
+function materialForm(m) {
+  const cats = [...new Set(state.materials.map((x) => x.category).filter(Boolean))].sort(thCmp);
+  return `
+    <div class="form-grid">
+      <div class="field"><label>รหัสวัสดุ</label><input id="f_code" value="${esc(m?.code || "")}" placeholder="M-001"></div>
+      <div class="field"><label>หมวด</label><input id="f_cat" list="catList" value="${esc(m?.category || "")}" placeholder="เช่น หนัง / โลหะ / บรรจุภัณฑ์"><datalist id="catList">${cats.map((c) => `<option value="${esc(c)}">`).join("")}</datalist></div>
+      <div class="field full"><label>ชื่อวัสดุ</label><input id="f_name" value="${esc(m?.name || "")}" placeholder="เช่น สายหนัง, ห่วงกุญแจ"></div>
+      <div class="field"><label>หน่วยที่ใช้ผลิต <span class="hint">(หน่วยย่อย)</span></label><input id="f_use" value="${esc(m?.use_unit || "ชิ้น")}" placeholder="ชิ้น / ซม. / กรัม"></div>
+      <div class="field"><label>จุดเตือนสต๊อกต่ำ</label><input id="f_reorder" type="number" step="any" value="${m?.reorder_point ?? 0}"></div>
+      <div class="field"><label>หน่วยที่ซื้อ <span class="hint">(หน่วยใหญ่)</span></label><input id="f_purch" value="${esc(m?.purchase_unit || "")}" placeholder="แพ็ค / เมตร / กิโล"></div>
+      <div class="field"><label>1 หน่วยซื้อ = กี่หน่วยใช้ผลิต</label><input id="f_conv" type="number" step="any" value="${m?.units_per_purchase ?? 1}"></div>
+    </div>
+    ${m ? "" : `<div class="section-box"><h4>สต๊อกเริ่มต้น (ไม่บังคับ)</h4><div class="form-grid">
+      <div class="field"><label>จำนวนเริ่มต้น <span class="hint">(หน่วยซื้อ)</span></label><input id="f_initqty" type="number" step="any" placeholder="0"></div>
+      <div class="field"><label>ราคาต้นทุน/หน่วยซื้อ <span class="hint">(บาท)</span></label><input id="f_initcost" type="number" step="any" placeholder="0.00"></div>
+    </div><p class="hint" style="margin:0">ใส่ทั้งสองช่องเพื่อบันทึกสต๊อก+ต้นทุนเริ่มต้น (จะกลายเป็นล็อตแรกในประวัติ)</p></div>`}
+    <div class="field"><label>หมายเหตุ</label><input id="f_note" value="${esc(m?.note || "")}"></div>
+    <div class="form-actions"><button class="btn-ghost" data-act="cancel">ยกเลิก</button><button class="btn" data-act="save-mat" data-id="${m?.id || ""}">บันทึก</button></div>`;
+}
+async function saveMaterial(id) {
+  const payload = {
+    code: val("f_code").trim() || null, category: val("f_cat").trim() || null, name: val("f_name").trim(),
+    use_unit: val("f_use").trim() || "ชิ้น", purchase_unit: val("f_purch").trim() || null,
+    units_per_purchase: Number(val("f_conv")) || 1, reorder_point: Number(val("f_reorder")) || 0, note: val("f_note").trim() || null,
+  };
+  if (!payload.name) return toast("กรุณาใส่ชื่อวัสดุ", true);
+  if (id) {
+    const { error } = await sb.from("materials").update(payload).eq("id", id);
+    if (error) return toast(error.message, true);
+  } else {
+    const { data, error } = await sb.from("materials").insert(payload).select().single();
+    if (error) return toast(error.message, true);
+    const iq = Number(val("f_initqty")), ic = Number(val("f_initcost"));
+    if (iq > 0) await sb.from("material_purchases").insert({ material_id: data.id, purchase_qty: iq, purchase_unit_price: ic || 0 });
+  }
+  closeModal(); toast(id ? "แก้ไขวัสดุแล้ว" : "เพิ่มวัสดุแล้ว"); await loadAll();
+}
+function restockForm(m) {
+  const unit = m.purchase_unit || m.use_unit;
+  return `
+    <p class="page-sub">เติมสต๊อก: <b>${esc(m.name)}</b> • คงเหลือ ${qty(m.qty_on_hand)} ${esc(m.use_unit)} • ต้นทุนเฉลี่ย ${money(m.avg_cost)}/${esc(m.use_unit)}</p>
+    <div class="form-grid">
+      <div class="field"><label>จำนวนที่ซื้อ <span class="hint">(${esc(unit)})</span></label><input id="r_qty" type="number" step="any" placeholder="0"></div>
+      <div class="field"><label>ราคาต่อ ${esc(unit)} <span class="hint">(บาท)</span></label><input id="r_price" type="number" step="any" placeholder="0.00"></div>
+      <div class="field"><label>วันที่ซื้อ</label><input id="r_date" type="date" value="${todayISO()}"></div>
+      <div class="field"><label>หมายเหตุ</label><input id="r_note" placeholder="เลขบิล / ร้าน"></div>
+    </div>
+    <div class="section-box"><div id="r_preview" class="page-sub">กรอกจำนวนและราคาเพื่อดูผลลัพธ์</div></div>
+    <div class="form-actions"><button class="btn-ghost" data-act="cancel">ยกเลิก</button><button class="btn" data-act="save-restock" data-id="${m.id}">บันทึกการเติม</button></div>`;
+}
+function updateRestockPreview(m) {
+  const pq = Number(val("r_qty")), pp = Number(val("r_price")), el = document.getElementById("r_preview"); if (!el) return;
+  if (!pq || pq <= 0) { el.textContent = "กรอกจำนวนและราคาเพื่อดูผลลัพธ์"; return; }
+  const conv = Number(m.units_per_purchase) || 1, useQty = pq * conv, unitCostNew = pp / conv;
+  const curQty = Number(m.qty_on_hand), curAvg = Number(m.avg_cost), newQty = curQty + useQty;
+  const newAvg = newQty > 0 ? (curQty * curAvg + useQty * unitCostNew) / newQty : 0;
+  el.innerHTML = `เพิ่ม <b>${qty(useQty)} ${esc(m.use_unit)}</b> • รวมเงิน <b>${money(pq * pp)}</b><br>ต้นทุนล็อตนี้ ${money(unitCostNew)}/${esc(m.use_unit)} → คงเหลือใหม่ <b>${qty(newQty)}</b> • ต้นทุนเฉลี่ยใหม่ <b>${money(newAvg)}</b>`;
+}
+async function saveRestock(id) {
+  const pq = Number(val("r_qty")), pp = Number(val("r_price"));
+  if (!pq || pq <= 0) return toast("กรุณาใส่จำนวน", true);
+  if (val("r_price") === "") return toast("กรุณาใส่ราคา", true);
+  const { error } = await sb.from("material_purchases").insert({ material_id: id, purchase_qty: pq, purchase_unit_price: pp, purchased_at: val("r_date") ? new Date(val("r_date")).toISOString() : new Date().toISOString(), note: val("r_note").trim() || null });
+  if (error) return toast(error.message, true);
+  closeModal(); toast("เติมสต๊อกแล้ว ต้นทุนเฉลี่ยอัปเดตอัตโนมัติ"); await loadAll();
+}
+async function showHistory(id) {
+  const m = materialById(id);
+  const { data, error } = await sb.from("material_purchases").select("*").eq("material_id", id).order("purchased_at", { ascending: false });
+  if (error) return toast(error.message, true);
+  const rows = data.map((p) => `<tr><td>${fmtDate(p.purchased_at)}</td><td class="num">${qty(p.purchase_qty)} ${esc(m.purchase_unit || m.use_unit)}</td><td class="num">${money(p.purchase_unit_price)}</td><td class="num">${qty(p.use_qty)} ${esc(m.use_unit)}</td><td class="num">${money(p.unit_cost)}</td><td class="num">${money(p.total_cost)}</td><td>${esc(p.note || "")}</td></tr>`).join("");
+  openModal("ประวัติการเติมสต๊อก — " + m.name, `<div class="table-wrap"><table><thead><tr><th>วันที่</th><th class="num">ซื้อ</th><th class="num">ราคา/หน่วยซื้อ</th><th class="num">เข้าสต๊อก</th><th class="num">ต้นทุน/หน่วยใช้</th><th class="num">รวมเงิน</th><th>หมายเหตุ</th></tr></thead><tbody>${rows || '<tr><td colspan="7" class="empty">ยังไม่มีประวัติ</td></tr>'}</tbody></table></div>`);
+}
+// นำเข้าวัสดุจาก Excel
+let matImportRows = [];
+function importMatModal() {
+  matImportRows = [];
+  openModal("นำเข้าวัสดุจาก Excel", `
+    <p class="page-sub">คอลัมน์: <b>รหัส, ชื่อวัสดุ, หมวด, หน่วยใช้, หน่วยซื้อ, ตัวแปลง, จุดเตือน, จำนวนซื้อ, ราคาต่อหน่วยซื้อ</b> (บังคับแค่ชื่อวัสดุ)</p>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><button class="btn-ghost" data-act="dl-mat-template">⬇ ดาวน์โหลดเทมเพลต</button><input type="file" id="matFile" accept=".xlsx,.xls,.csv"></div>
+    <div id="matImportPreview"></div>
+    <div class="form-actions"><button class="btn-ghost" data-act="cancel">ยกเลิก</button><button class="btn" id="doImportMat" data-act="do-import-mat" disabled>นำเข้า</button></div>`);
+  document.getElementById("matFile").addEventListener("change", (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    readXlsx(f, (rows) => {
+      matImportRows = rows.map((r) => ({
+        code: String(pick(r, ["รหัส", "รหัสวัสดุ", "code", "sku"])).trim(), name: String(pick(r, ["ชื่อวัสดุ", "ชื่อ", "name"])).trim(),
+        category: String(pick(r, ["หมวด", "หมวดหมู่", "ชนิด", "category"])).trim(), use_unit: String(pick(r, ["หน่วยใช้", "หน่วยใช้ผลิต", "หน่วย", "use_unit"])).trim(),
+        purchase_unit: String(pick(r, ["หน่วยซื้อ", "purchase_unit"])).trim(), units_per_purchase: Number(pick(r, ["ตัวแปลง", "units_per_purchase", "conv"])) || 1,
+        reorder_point: Number(pick(r, ["จุดเตือน", "reorder"])) || 0, buy_qty: Number(pick(r, ["จำนวนซื้อ", "จำนวน", "qty"])) || 0, buy_price: Number(pick(r, ["ราคาต่อหน่วยซื้อ", "ราคา", "price"])) || 0,
+      })).filter((r) => r.name);
+      const prev = matImportRows.slice(0, 50).map((r) => `<tr><td>${esc(r.code)}</td><td>${esc(r.name)}</td><td>${esc(r.category)}</td><td>${esc(r.use_unit || "ชิ้น")}</td><td class="num">${r.buy_qty || ""}</td><td class="num">${r.buy_price ? money(r.buy_price) : ""}</td></tr>`).join("");
+      document.getElementById("matImportPreview").innerHTML = matImportRows.length ? `<p class="page-sub">พบ <b>${matImportRows.length}</b> รายการ (แสดง ${Math.min(50, matImportRows.length)} แถวแรก)</p><div class="table-wrap" style="max-height:260px;overflow:auto"><table><thead><tr><th>รหัส</th><th>ชื่อ</th><th>หมวด</th><th>หน่วย</th><th class="num">ซื้อ</th><th class="num">ราคา</th></tr></thead><tbody>${prev}</tbody></table></div>` : `<p class="page-sub" style="color:var(--red)">ไม่พบรายการที่มี “ชื่อวัสดุ”</p>`;
+      document.getElementById("doImportMat").disabled = matImportRows.length === 0;
+    });
+  });
+}
+async function doImportMat() {
+  if (!matImportRows.length) return;
+  const btn = document.getElementById("doImportMat"); btn.disabled = true; btn.textContent = "กำลังนำเข้า…";
+  let ok = 0, fail = 0;
+  for (const r of matImportRows) {
+    const { data, error } = await sb.from("materials").insert({ code: r.code || null, name: r.name, category: r.category || null, use_unit: r.use_unit || "ชิ้น", purchase_unit: r.purchase_unit || null, units_per_purchase: r.units_per_purchase, reorder_point: r.reorder_point }).select().single();
+    if (error) { fail++; continue; } ok++;
+    if (r.buy_qty > 0) await sb.from("material_purchases").insert({ material_id: data.id, purchase_qty: r.buy_qty, purchase_unit_price: r.buy_price });
+  }
+  closeModal(); toast(`นำเข้าสำเร็จ ${ok} รายการ${fail ? ` • ไม่สำเร็จ ${fail}` : ""}`); await loadAll();
+}
+const dlMatTemplate = () => downloadSheet("template-วัสดุ.xlsx", [["รหัส", "ชื่อวัสดุ", "หมวด", "หน่วยใช้", "หน่วยซื้อ", "ตัวแปลง", "จุดเตือน", "จำนวนซื้อ", "ราคาต่อหน่วยซื้อ"], ["M-001", "สายหนัง", "หนัง", "ซม.", "เมตร", 100, 50, 2, 50], ["M-002", "ห่วงกุญแจ", "โลหะ", "ชิ้น", "แพ็ค", 10, 20, 5, 20]], "materials");
+
+/* ================= หน้า 2: SKU ================= */
+function renderSKU() {
+  const rows = state.products.map((p) => {
+    const uc = unitCost(p), profit = Number(p.selling_price) - uc;
+    return `<tr>
+      <td><b>${esc(p.sku_code)}</b></td>
+      <td><span class="link-cell" data-act="detail-sku" data-id="${p.id}">${esc(p.name)}</span> ${p.active ? "" : '<span class="pill gray">ปิดขาย</span>'}</td>
+      <td class="num">${bomOf(p.id).length} รายการ</td>
+      <td class="num">${money(uc)}</td>
+      <td class="num">${money(p.selling_price)}</td>
+      <td class="num"><span class="pill ${profit >= 0 ? "green" : "red"}">${money(profit)}</span></td>
+      <td class="num"><button class="kebab-btn" data-act="kebab" data-kind="sku" data-id="${p.id}">⋯</button></td>
+    </tr>`;
+  }).join("");
+  view.innerHTML = `
+    <div class="page-head"><div><h2>สินค้า (SKU)</h2><p class="page-sub">คลิกชื่อสินค้าเพื่อดูรายละเอียด • ปุ่ม ⋯ เพื่อแก้ไข/ลบ</p></div><button class="btn" data-act="add-sku">+ เพิ่ม SKU</button></div>
+    <div class="card"><div class="table-wrap"><table>
+      <thead><tr><th>รหัส</th><th>ชื่อสินค้า</th><th class="num">วัสดุในสูตร</th><th class="num">ต้นทุน/ชิ้น</th><th class="num">ราคาขาย</th><th class="num">กำไร/ชิ้น</th><th class="num"></th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="7" class="empty">ยังไม่มี SKU</td></tr>'}</tbody>
+    </table></div></div>`;
+}
+// ฟอร์ม SKU พร้อม BOM ในตัว
+let formBom = [];
+function skuForm(p) {
+  formBom = p ? bomOf(p.id).map((b) => ({ material_id: b.material_id, qty_per_unit: Number(b.qty_per_unit) })) : [];
+  openModal(p ? "แก้ไข SKU" : "เพิ่ม SKU", `
+    <div class="form-grid">
+      <div class="field"><label>รหัส SKU</label><input id="s_code" value="${esc(p?.sku_code || "")}" placeholder="KC-001"></div>
+      <div class="field"><label>ราคาขาย/ชิ้น</label><input id="s_price" type="number" step="any" value="${p?.selling_price ?? 0}"></div>
+      <div class="field full"><label>ชื่อสินค้า</label><input id="s_name" value="${esc(p?.name || "")}" placeholder="พวงกุญแจหนังรุ่น A"></div>
+      <div class="field"><label>ค่าแรง/ชิ้น</label><input id="s_labor" type="number" step="any" value="${p?.labor_cost ?? 0}"></div>
+      <div class="field"><label>ค่าเสื่อม+ค่าใช้จ่ายแฝง/ชิ้น</label><input id="s_oh" type="number" step="any" value="${p?.overhead_cost ?? 0}"></div>
+      <div class="field"><label>อัตราของเสียปกติ (%) <span class="hint">(เผื่อในต้นทุน)</span></label><input id="s_waste" type="number" step="any" value="${p?.normal_waste_pct ?? 0}"></div>
+      ${p ? `<div class="field"><label>สถานะ</label><label style="font-weight:400"><input type="checkbox" id="s_active" ${p.active ? "checked" : ""} style="width:auto;margin-right:6px">เปิดขายอยู่</label></div>` : ""}
+    </div>
+    <div class="section-box"><h4>สูตรวัสดุ (BOM) <span class="hint">— เลือกจากหน้าสต๊อก เพิ่มได้หลายวัสดุ</span></h4>
+      <div class="cart-line" style="grid-template-columns:2fr 90px 80px"><input id="fbom_mat" list="fbomDL" placeholder="พิมพ์ค้นหาวัสดุ…"><input id="fbom_qty" type="number" step="any" placeholder="จำนวน/ชิ้น"><button class="btn" data-act="fbom-add">เพิ่ม</button></div>
+      ${matDatalist("fbomDL")}
+      <div id="fbomList"></div>
+    </div>
+    <div class="field"><label>หมายเหตุ</label><input id="s_note" value="${esc(p?.note || "")}"></div>
+    <div class="form-actions"><button class="btn-ghost" data-act="cancel">ยกเลิก</button><button class="btn" data-act="save-sku" data-id="${p?.id || ""}">บันทึก</button></div>`);
+  renderFormBom();
+}
+function renderFormBom() {
+  const el = document.getElementById("fbomList"); if (!el) return;
+  let total = 0;
+  const rows = formBom.map((b, i) => {
+    const m = materialById(b.material_id); const cost = Number(b.qty_per_unit) * Number(m?.avg_cost || 0); total += cost;
+    return `<div class="cart-line" style="grid-template-columns:2fr 90px 90px 30px"><span>${esc(m?.name || "?")}</span><span class="ro">${qty(b.qty_per_unit)} ${esc(m?.use_unit || "")}</span><span class="ro">${money(cost)}</span><button class="mini-x" data-act="fbom-del" data-i="${i}">×</button></div>`;
+  }).join("");
+  el.innerHTML = (rows || '<p class="page-sub" style="margin:4px 0">ยังไม่มีวัสดุในสูตร</p>') + (formBom.length ? `<div class="cart-line" style="grid-template-columns:2fr 90px 90px 30px;font-weight:700;border-top:1px solid var(--line);padding-top:6px"><span>รวมต้นทุนวัสดุ</span><span></span><span class="ro">${money(total)}</span><span></span></div>` : "");
+}
+function fbomAdd() {
+  const m = resolveMat(val("fbom_mat")), q = Number(val("fbom_qty"));
+  if (!m) return toast("เลือกวัสดุจากรายการ", true);
+  if (!q || q <= 0) return toast("ใส่จำนวนต่อชิ้น", true);
+  const ex = formBom.find((b) => b.material_id === m.id);
+  if (ex) ex.qty_per_unit = q; else formBom.push({ material_id: m.id, qty_per_unit: q });
+  document.getElementById("fbom_mat").value = ""; document.getElementById("fbom_qty").value = "";
+  renderFormBom();
+}
+function fbomDel(i) { formBom.splice(i, 1); renderFormBom(); }
+async function saveSKU(id) {
+  const payload = { sku_code: val("s_code").trim(), name: val("s_name").trim(), selling_price: Number(val("s_price")) || 0, labor_cost: Number(val("s_labor")) || 0, overhead_cost: Number(val("s_oh")) || 0, normal_waste_pct: Number(val("s_waste")) || 0, note: val("s_note").trim() || null };
+  if (id) payload.active = document.getElementById("s_active")?.checked ?? true;
+  if (!payload.sku_code || !payload.name) return toast("กรุณาใส่รหัสและชื่อสินค้า", true);
+  let pid = id;
+  if (id) { const { error } = await sb.from("products").update(payload).eq("id", id); if (error) return toast(error.message, true); }
+  else { const { data, error } = await sb.from("products").insert(payload).select().single(); if (error) return toast(error.message, true); pid = data.id; }
+  // ซิงก์ BOM: ลบเดิมทั้งหมดแล้วใส่ใหม่ (ไม่กระทบสต๊อก)
+  await sb.from("product_materials").delete().eq("product_id", pid);
+  if (formBom.length) await sb.from("product_materials").insert(formBom.map((b) => ({ product_id: pid, material_id: b.material_id, qty_per_unit: b.qty_per_unit })));
+  closeModal(); toast(id ? "แก้ไข SKU แล้ว" : "เพิ่ม SKU แล้ว"); await loadAll();
+}
+function detailSKU(id) {
+  const p = productById(id);
+  const lines = bomOf(id).map((b) => { const m = materialById(b.material_id); return `<li><span>${esc(m?.name || "?")} — ${qty(b.qty_per_unit)} ${esc(m?.use_unit || "")} × ${money(m?.avg_cost)}</span><span class="ro">${money(Number(b.qty_per_unit) * Number(m?.avg_cost || 0))}</span></li>`; }).join("");
+  const matCost = unitMaterialCost(id), uc = unitCost(p), profit = Number(p.selling_price) - uc, wadj = wasteAdjCost(p);
+  openModal("รายละเอียดสินค้า — " + p.sku_code + " " + p.name, `
+    ${p.active ? "" : '<p><span class="pill gray">ปิดขาย</span></p>'}
+    <ul class="breakdown">
+      ${lines || '<li><span class="page-sub">ยังไม่มีวัสดุในสูตร</span><span></span></li>'}
+      <li><span>รวมต้นทุนวัสดุ</span><span class="ro">${money(matCost)}</span></li>
+      <li><span>+ ค่าแรง</span><span class="ro">${money(p.labor_cost)}</span></li>
+      <li><span>+ ค่าเสื่อม+ค่าใช้จ่ายแฝง</span><span class="ro">${money(p.overhead_cost)}</span></li>
+      <li class="total"><span>ต้นทุนรวม/ชิ้น</span><span class="ro">${money(uc)}</span></li>
+      ${Number(p.normal_waste_pct) > 0 ? `<li><span>ต้นทุน/ชิ้น (เผื่อของเสีย ${qty(p.normal_waste_pct)}%)</span><span class="ro">${money(wadj)}</span></li>` : ""}
+      <li><span>ราคาขาย</span><span class="ro">${money(p.selling_price)}</span></li>
+      <li class="total"><span>กำไร/ชิ้น</span><span class="ro" style="color:${profit >= 0 ? "var(--green)" : "var(--red)"}">${money(profit)} (${pct(p.selling_price ? (profit / p.selling_price) * 100 : 0)})</span></li>
+    </ul>
+    ${p.note ? `<p class="page-sub">หมายเหตุ: ${esc(p.note)}</p>` : ""}
+    <div class="form-actions"><button class="btn-ghost" data-act="edit-sku" data-id="${p.id}">แก้ไข</button><button class="btn" data-act="cancel">ปิด</button></div>`);
+}
+async function delSKU(id) {
+  const p = productById(id); if (!confirm(`ลบ SKU “${p.sku_code} ${p.name}” ?`)) return;
+  const { error } = await sb.from("products").delete().eq("id", id);
+  if (error) return toast("ลบไม่ได้ (อาจมีออเดอร์อ้างอิงอยู่) — ปิดขายแทนได้", true);
+  toast("ลบ SKU แล้ว"); await loadAll();
+}
+
+/* ================= หน้า 3: ราคาซื้อขาย ================= */
+function renderPricing() {
+  const rows = state.products.filter((p) => p.active).map((p) => {
+    const uc = unitCost(p), profit = Number(p.selling_price) - uc, margin = p.selling_price ? (profit / p.selling_price) * 100 : 0;
+    return `<tr>
+      <td><b>${esc(p.sku_code)}</b> ${esc(p.name)}</td>
+      <td class="num">${money(unitMaterialCost(p.id))}</td><td class="num">${money(p.labor_cost)}</td><td class="num">${money(p.overhead_cost)}</td>
+      <td class="num"><b>${money(uc)}</b></td><td class="num">${Number(p.normal_waste_pct) > 0 ? money(wasteAdjCost(p)) : "—"}</td>
+      <td class="num">${money(p.selling_price)}</td><td class="num"><span class="pill ${profit >= 0 ? "green" : "red"}">${money(profit)}</span></td><td class="num">${pct(margin)}</td>
+    </tr>`;
+  }).join("");
+  const orderRows = state.orders.slice(0, 25).map((o) => `<tr>
+    <td><span class="link-cell" data-act="detail-order" data-id="${o.id}">${fmtDateTime(o.sold_at)}</span></td>
+    <td>${esc(o.channel || "-")}</td><td class="num">${money(o.revenue)}</td><td class="num">${money(o.gross_profit)}</td>
+    <td class="num"><b style="color:${o.net_profit >= 0 ? "var(--green)" : "var(--red)"}">${money(o.net_profit)}</b></td>
+    <td class="num"><button class="kebab-btn" data-act="kebab" data-kind="order" data-id="${o.id}">⋯</button></td>
+  </tr>`).join("");
+  view.innerHTML = `
+    <div class="page-head"><div><h2>ราคาซื้อขาย</h2><p class="page-sub">ต้นทุน/กำไรคำนวณสดจากหน้าสต๊อก • คลิกเวลาออเดอร์เพื่อดูรายละเอียด</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-ghost" data-act="manage-channels">⚙ ช่องทางขาย</button><button class="btn-ghost" data-act="import-preorder">⬆ นำเข้าพรีออเดอร์</button><button class="btn" data-act="new-sale">+ บันทึกการขาย</button></div>
+    </div>
+    <div class="card"><div class="card-head">ตารางต้นทุน–กำไร ต่อชิ้น</div><div class="table-wrap"><table>
+      <thead><tr><th>สินค้า</th><th class="num">ค่าวัสดุ</th><th class="num">ค่าแรง</th><th class="num">ค่าเสื่อม+ค่าใช้จ่ายแฝง</th><th class="num">ต้นทุนรวม</th><th class="num">เผื่อของเสีย</th><th class="num">ราคาขาย</th><th class="num">กำไร/ชิ้น</th><th class="num">Margin</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="9" class="empty">ยังไม่มีสินค้าที่เปิดขาย</td></tr>'}</tbody>
+    </table></div></div>
+    <div class="card"><div class="card-head">ออเดอร์ล่าสุด</div><div class="table-wrap"><table>
+      <thead><tr><th>เวลา</th><th>ช่องทาง</th><th class="num">ยอดขาย</th><th class="num">กำไรขั้นต้น</th><th class="num">กำไรสุทธิ</th><th class="num"></th></tr></thead>
+      <tbody>${orderRows || '<tr><td colspan="6" class="empty">ยังไม่มีออเดอร์</td></tr>'}</tbody>
+    </table></div></div>`;
+}
+// จัดการช่องทางขาย
+let chEdit = [];
+function manageChannels() { chEdit = JSON.parse(JSON.stringify(state.settings.channels || [])); renderChannelModal(); }
+function renderChannelModal() {
+  const rows = chEdit.map((c, i) => `<div class="cart-line" style="grid-template-columns:2fr 110px 36px;margin-bottom:8px"><input data-ch="name" data-i="${i}" value="${esc(c.name || "")}" placeholder="ชื่อช่องทาง"><input data-ch="fee" data-i="${i}" type="number" step="any" value="${c.fee_percent ?? 0}" placeholder="%"><button class="mini-x" data-act="ch-del" data-i="${i}">×</button></div>`).join("");
+  openModal("จัดการช่องทางขาย", `
+    <p class="page-sub">ตั้งชื่อช่องทาง + % ค่าธรรมเนียม (คิดอัตโนมัติตอนบันทึกการขาย)</p>
+    <div class="cart-line" style="grid-template-columns:2fr 110px 36px;color:var(--muted);font-size:12px;font-weight:600"><span>ช่องทาง</span><span>% ค่าธรรมเนียม</span><span></span></div>
+    <div id="chRows">${rows || '<p class="page-sub">ยังไม่มีช่องทาง</p>'}</div>
+    <button class="btn-sm" data-act="ch-add" style="margin-top:6px">+ เพิ่มช่องทาง</button>
+    <div class="form-actions"><button class="btn-ghost" data-act="cancel">ยกเลิก</button><button class="btn" data-act="save-channels">บันทึก</button></div>`);
+  document.querySelectorAll("[data-ch]").forEach((el) => el.addEventListener("input", (e) => { const i = Number(e.target.dataset.i); if (e.target.dataset.ch === "name") chEdit[i].name = e.target.value; else chEdit[i].fee_percent = Number(e.target.value) || 0; }));
+}
+function chAdd() { chEdit.push({ name: "", fee_percent: 0 }); renderChannelModal(); }
+function chDel(i) { chEdit.splice(i, 1); renderChannelModal(); }
+async function saveChannels() {
+  const clean = chEdit.filter((c) => (c.name || "").trim()).map((c) => ({ name: c.name.trim(), fee_percent: Number(c.fee_percent) || 0 }));
+  const { error } = await sb.from("app_settings").upsert({ key: "channels", value: clean, updated_at: new Date().toISOString() });
+  if (error) return toast(error.message, true);
+  closeModal(); toast("บันทึกช่องทางขายแล้ว"); await loadAll();
+}
+// บันทึกการขาย
+let cart = [];
+function channelOptions(sel) { return (state.settings.channels || []).map((c) => `<option value="${esc(c.name)}" data-fee="${c.fee_percent || 0}" ${sel === c.name ? "selected" : ""}>${esc(c.name)} (${c.fee_percent || 0}%)</option>`).join(""); }
+function newSaleForm() {
+  cart = [];
+  openModal("บันทึกการขาย", `
+    <div class="form-grid"><div class="field"><label>ช่องทางขาย</label><select id="o_channel">${channelOptions() || '<option value="">— ตั้งค่าที่ “ช่องทางขาย” —</option>'}</select></div><div class="field"><label>วันที่ขาย</label><input id="o_date" type="date" value="${todayISO()}"></div></div>
+    <div class="section-box"><h4>รายการสินค้า <span class="hint">(พิมพ์ค้นหา รหัส/ชื่อ)</span></h4>
+      <div class="cart-line" style="grid-template-columns:2fr 70px 90px auto"><input id="c_prod" list="saleProdList" placeholder="พิมพ์ค้นหาสินค้า…"><input id="c_qty" type="number" step="any" value="1" placeholder="จำนวน"><input id="c_price" type="number" step="any" placeholder="ราคา/ชิ้น"><button class="btn" data-act="cart-add">เพิ่ม</button></div>
+      ${prodDatalist("saleProdList")}<div id="cartList"></div></div>
+    <div class="form-grid"><div class="field"><label>ค่าส่ง</label><input id="o_ship" type="number" step="any" value="0"></div><div class="field"><label>ค่าธรรมเนียม <span class="hint">(auto)</span></label><input id="o_fee" type="number" step="any" value="0"></div><div class="field"><label>ส่วนลด</label><input id="o_disc" type="number" step="any" value="0"></div><div class="field"><label>หมายเหตุ</label><input id="o_note"></div></div>
+    <div class="section-box" style="background:#eef3ff;border-color:#cdddfd"><ul class="breakdown" id="saleSummary"></ul></div>
+    <div class="form-actions"><button class="btn-ghost" data-act="cancel">ยกเลิก</button><button class="btn" data-act="save-sale">บันทึกการขาย</button></div>`);
+  document.getElementById("c_prod").addEventListener("input", (e) => { const p = resolveProd(e.target.value); if (p) document.getElementById("c_price").value = p.selling_price; });
+  document.getElementById("o_channel").addEventListener("change", recalcFee);
+  ["o_ship", "o_fee", "o_disc"].forEach((id) => document.getElementById(id).addEventListener("input", renderSaleSummary));
+  recalcFee();
+}
+function cartAdd() {
+  const p = resolveProd(val("c_prod")); if (!p) return toast("เลือกสินค้าจากรายการ", true);
+  const q = Number(val("c_qty")), price = Number(val("c_price")); if (!q || q <= 0) return toast("ใส่จำนวน", true);
+  cart.push({ product_id: p.id, sku: p.sku_code, name: p.name, qty: q, price, unitCost: unitCost(p) });
+  document.getElementById("c_prod").value = ""; document.getElementById("c_qty").value = 1; document.getElementById("c_price").value = "";
+  renderCart(); recalcFee();
+}
+function renderCart() {
+  const el = document.getElementById("cartList"); if (!el) return;
+  el.innerHTML = cart.map((c, i) => `<div class="cart-line"><span>${esc(c.sku)} ${esc(c.name)}</span><span class="ro">${qty(c.qty)}×</span><span class="ro hide-sm">${money(c.price)}</span><span class="ro">${money(c.qty * c.price)}</span><button class="mini-x" data-act="cart-del" data-i="${i}">×</button></div>`).join("") || '<p class="page-sub">ยังไม่มีรายการ</p>';
+}
+function recalcFee() {
+  const sel = document.getElementById("o_channel"); const feePct = sel ? Number(sel.selectedOptions[0]?.dataset.fee || 0) : 0;
+  const revenue = cart.reduce((s, c) => s + c.qty * c.price, 0); const feeEl = document.getElementById("o_fee"); if (feeEl) feeEl.value = (revenue * feePct / 100).toFixed(2);
+  renderSaleSummary();
+}
+function renderSaleSummary() {
+  const el = document.getElementById("saleSummary"); if (!el) return;
+  const revenue = cart.reduce((s, c) => s + c.qty * c.price, 0), cogs = cart.reduce((s, c) => s + c.qty * c.unitCost, 0), gross = revenue - cogs;
+  const ship = Number(val("o_ship")) || 0, fee = Number(val("o_fee")) || 0, disc = Number(val("o_disc")) || 0, net = gross - ship - fee - disc;
+  el.innerHTML = `<li><span>ยอดขาย</span><span class="ro">${money(revenue)}</span></li><li><span>ต้นทุนสินค้า (วัสดุ+แรง+แฝง)</span><span class="ro">− ${money(cogs)}</span></li><li><span>กำไรขั้นต้น</span><span class="ro">${money(gross)}</span></li><li><span>− ค่าส่ง / ค่าธรรมเนียม / ส่วนลด</span><span class="ro">− ${money(ship + fee + disc)}</span></li><li class="total"><span>กำไรสุทธิ</span><span class="ro" style="color:${net >= 0 ? "var(--green)" : "var(--red)"}">${money(net)}</span></li>`;
+}
+async function saveSale() {
+  if (cart.length === 0) return toast("เพิ่มสินค้าอย่างน้อย 1 รายการ", true);
+  const { data, error } = await sb.from("sales_orders").insert({ channel: val("o_channel") || null, sold_at: val("o_date") ? new Date(val("o_date")).toISOString() : new Date().toISOString(), shipping_cost: Number(val("o_ship")) || 0, platform_fee: Number(val("o_fee")) || 0, discount: Number(val("o_disc")) || 0, note: val("o_note").trim() || null }).select().single();
+  if (error) return toast(error.message, true);
+  const { error: e2 } = await sb.from("sales_items").insert(cart.map((c) => ({ order_id: data.id, product_id: c.product_id, qty: c.qty, sale_price: c.price })));
+  if (e2) { await sb.from("sales_orders").delete().eq("id", data.id); return toast(e2.message, true); }
+  closeModal(); toast("บันทึกการขายแล้ว หักสต๊อกอัตโนมัติ"); await loadAll();
+}
+function orderItemsHtml(oid) {
+  return itemsOf(oid).map((i) => { const p = productById(i.product_id); return `<li><span>${esc(p ? p.sku_code + " " + p.name : "?")} — ${qty(i.qty)} × ${money(i.sale_price)}</span><span class="ro">${money(i.line_revenue)}</span></li>`; }).join("");
+}
+function detailOrder(id) {
+  const o = orderById(id);
+  openModal("รายละเอียดออเดอร์ • " + fmtDateTime(o.sold_at), `
+    <p class="page-sub">ช่องทาง: <b>${esc(o.channel || "-")}</b>${o.order_no ? ` • อ้างอิง: ${esc(o.order_no)}` : ""}${o.note ? ` • ${esc(o.note)}` : ""}</p>
+    <ul class="breakdown">
+      ${orderItemsHtml(id) || '<li><span class="page-sub">ไม่มีรายการ</span><span></span></li>'}
+      <li class="total"><span>ยอดขาย</span><span class="ro">${money(o.revenue)}</span></li>
+      <li><span>ต้นทุนสินค้า (วัสดุ+แรง+แฝง)</span><span class="ro">− ${money(Number(o.material_cost) + Number(o.labor_cost) + Number(o.overhead_cost))}</span></li>
+      <li><span>กำไรขั้นต้น</span><span class="ro">${money(o.gross_profit)}</span></li>
+      <li><span>− ค่าส่ง ${money(o.shipping_cost)} / ค่าธรรมเนียม ${money(o.platform_fee)} / ส่วนลด ${money(o.discount)}</span><span class="ro">− ${money(Number(o.shipping_cost) + Number(o.platform_fee) + Number(o.discount))}</span></li>
+      <li class="total"><span>กำไรสุทธิ</span><span class="ro" style="color:${o.net_profit >= 0 ? "var(--green)" : "var(--red)"}">${money(o.net_profit)}</span></li>
+    </ul>
+    <div class="form-actions"><button class="btn-ghost" data-act="edit-order" data-id="${o.id}">แก้ไข</button><button class="btn" data-act="cancel">ปิด</button></div>`);
+}
+function editOrder(id) {
+  const o = orderById(id);
+  const itemRows = itemsOf(id).map((i) => { const p = productById(i.product_id); return `<div class="cart-line" style="grid-template-columns:2fr 70px 90px 30px"><span>${esc(p ? p.sku_code + " " + p.name : "?")}</span><span class="ro">${qty(i.qty)}×</span><span class="ro">${money(i.sale_price)}</span><button class="mini-x" data-act="eo-item-del" data-id="${i.id}" data-oid="${id}">×</button></div>`; }).join("");
+  openModal("แก้ไขออเดอร์", `
+    <div class="form-grid"><div class="field"><label>ช่องทางขาย</label><select id="eo_channel">${channelOptions(o.channel)}${o.channel && !(state.settings.channels || []).some((c) => c.name === o.channel) ? `<option value="${esc(o.channel)}" selected>${esc(o.channel)}</option>` : ""}</select></div><div class="field"><label>วันที่ขาย</label><input id="eo_date" type="date" value="${new Date(o.sold_at).toISOString().slice(0, 10)}"></div></div>
+    <div class="section-box"><h4>รายการสินค้า <span class="hint">(เพิ่ม/ลบ แล้วหักหรือคืนสต๊อกทันที)</span></h4>
+      <div id="eoItems">${itemRows || '<p class="page-sub">ไม่มีรายการ</p>'}</div>
+      <div class="cart-line" style="grid-template-columns:2fr 70px 90px auto;margin-top:8px"><input id="eo_prod" list="eoProdList" placeholder="เพิ่มสินค้า…"><input id="eo_qty" type="number" step="any" value="1"><input id="eo_price" type="number" step="any" placeholder="ราคา"><button class="btn" data-act="eo-item-add" data-oid="${id}">เพิ่ม</button></div>
+      ${prodDatalist("eoProdList")}</div>
+    <div class="form-grid"><div class="field"><label>ค่าส่ง</label><input id="eo_ship" type="number" step="any" value="${o.shipping_cost}"></div><div class="field"><label>ค่าธรรมเนียม</label><input id="eo_fee" type="number" step="any" value="${o.platform_fee}"></div><div class="field"><label>ส่วนลด</label><input id="eo_disc" type="number" step="any" value="${o.discount}"></div><div class="field"><label>หมายเหตุ</label><input id="eo_note" value="${esc(o.note || "")}"></div></div>
+    <div class="form-actions"><button class="btn-ghost" data-act="cancel">ปิด</button><button class="btn" data-act="save-order" data-id="${id}">บันทึกการแก้ไข</button></div>`);
+  document.getElementById("eo_prod").addEventListener("input", (e) => { const p = resolveProd(e.target.value); if (p) document.getElementById("eo_price").value = p.selling_price; });
+}
+async function eoItemAdd(oid) {
+  const p = resolveProd(val("eo_prod")); if (!p) return toast("เลือกสินค้า", true);
+  const q = Number(val("eo_qty")), price = Number(val("eo_price")) || Number(p.selling_price); if (!q || q <= 0) return toast("ใส่จำนวน", true);
+  const { error } = await sb.from("sales_items").insert({ order_id: oid, product_id: p.id, qty: q, sale_price: price });
+  if (error) return toast(error.message, true);
+  toast("เพิ่มรายการแล้ว หักสต๊อก"); await loadAll(); editOrder(oid);
+}
+async function eoItemDel(itemId, oid) {
+  const { error } = await sb.from("sales_items").delete().eq("id", itemId);
+  if (error) return toast(error.message, true);
+  toast("ลบรายการแล้ว คืนสต๊อก"); await loadAll(); editOrder(oid);
+}
+async function saveOrder(id) {
+  const { error } = await sb.from("sales_orders").update({ channel: val("eo_channel") || null, sold_at: val("eo_date") ? new Date(val("eo_date")).toISOString() : new Date().toISOString(), shipping_cost: Number(val("eo_ship")) || 0, platform_fee: Number(val("eo_fee")) || 0, discount: Number(val("eo_disc")) || 0, note: val("eo_note").trim() || null }).eq("id", id);
+  if (error) return toast(error.message, true);
+  closeModal(); toast("บันทึกการแก้ไขออเดอร์แล้ว"); await loadAll();
+}
+async function delOrder(id) {
+  if (!confirm("ลบออเดอร์นี้? ระบบจะคืนวัสดุกลับเข้าสต๊อก")) return;
+  const { error } = await sb.from("sales_orders").delete().eq("id", id);
+  if (error) return toast(error.message, true);
+  toast("ลบออเดอร์แล้ว คืนสต๊อกเรียบร้อย"); await loadAll();
+}
+// นำเข้าพรีออเดอร์
+let preImportGroups = [];
+function importPreorderModal() {
+  preImportGroups = [];
+  openModal("นำเข้าพรีออเดอร์จาก Excel", `
+    <p class="page-sub">คอลัมน์: <b>อ้างอิง, วันที่, ช่องทาง, SKU, จำนวน, ราคาขาย, ค่าส่ง, ค่าธรรมเนียม, ส่วนลด</b> • แถว “อ้างอิง” เดียวกัน = ออเดอร์เดียวกัน</p>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><button class="btn-ghost" data-act="dl-preorder-template">⬇ ดาวน์โหลดเทมเพลต</button><input type="file" id="preFile" accept=".xlsx,.xls,.csv"></div>
+    <div id="preImportPreview"></div>
+    <div class="form-actions"><button class="btn-ghost" data-act="cancel">ยกเลิก</button><button class="btn" id="doImportPre" data-act="do-import-preorder" disabled>นำเข้า</button></div>`);
+  document.getElementById("preFile").addEventListener("change", (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    readXlsx(f, (rows) => {
+      const groups = {}; let autoIdx = 0; const unknown = new Set();
+      for (const r of rows) {
+        const sku = String(pick(r, ["SKU", "รหัส", "รหัสสินค้า", "sku_code"])).trim(), name = String(pick(r, ["ชื่อสินค้า", "ชื่อ", "name"])).trim();
+        if (!sku && !name) continue;
+        const prod = resolveProd(sku) || resolveProd(name);
+        const refRaw = String(pick(r, ["อ้างอิง", "เลขออเดอร์", "ref", "order"])).trim(), ref = refRaw || "__auto" + autoIdx++;
+        if (!groups[ref]) groups[ref] = { ref: refRaw || "(ไม่มีเลข)", date: pick(r, ["วันที่", "date"]), channel: String(pick(r, ["ช่องทาง", "channel"])).trim(), shipping: Number(pick(r, ["ค่าส่ง", "shipping"])) || 0, fee: Number(pick(r, ["ค่าธรรมเนียม", "fee"])) || 0, discount: Number(pick(r, ["ส่วนลด", "discount"])) || 0, items: [] };
+        if (!prod) { unknown.add(sku || name); continue; }
+        groups[ref].items.push({ product_id: prod.id, sku: prod.sku_code, qty: Number(pick(r, ["จำนวน", "qty"])) || 1, sale_price: Number(pick(r, ["ราคาขาย", "ราคา", "price"])) || Number(prod.selling_price) });
+      }
+      preImportGroups = Object.values(groups).filter((g) => g.items.length);
+      const totalItems = preImportGroups.reduce((s, g) => s + g.items.length, 0);
+      const prev = preImportGroups.slice(0, 30).map((g) => `<tr><td>${esc(g.ref)}</td><td>${esc(g.channel || "-")}</td><td>${g.items.map((i) => esc(i.sku) + "×" + i.qty).join(", ")}</td><td class="num">${money(g.items.reduce((s, i) => s + i.qty * i.sale_price, 0))}</td></tr>`).join("");
+      document.getElementById("preImportPreview").innerHTML = preImportGroups.length ? `<p class="page-sub">พบ <b>${preImportGroups.length}</b> ออเดอร์ (${totalItems} รายการ)${unknown.size ? ` • <span style="color:var(--red)">ข้าม SKU ไม่รู้จัก: ${esc([...unknown].slice(0, 8).join(", "))}</span>` : ""}</p><div class="table-wrap" style="max-height:260px;overflow:auto"><table><thead><tr><th>อ้างอิง</th><th>ช่องทาง</th><th>รายการ</th><th class="num">ยอด</th></tr></thead><tbody>${prev}</tbody></table></div>` : `<p class="page-sub" style="color:var(--red)">ไม่พบรายการที่ใช้ได้ ${unknown.size ? "(SKU ไม่ตรงกับสินค้าในระบบ)" : ""}</p>`;
+      document.getElementById("doImportPre").disabled = preImportGroups.length === 0;
+    });
+  });
+}
+async function doImportPreorder() {
+  if (!preImportGroups.length) return;
+  const btn = document.getElementById("doImportPre"); btn.disabled = true; btn.textContent = "กำลังนำเข้า…";
+  let ok = 0, fail = 0;
+  for (const g of preImportGroups) {
+    const { data, error } = await sb.from("sales_orders").insert({ order_no: g.ref === "(ไม่มีเลข)" ? null : g.ref, channel: g.channel || null, sold_at: g.date ? new Date(g.date).toISOString() : new Date().toISOString(), shipping_cost: g.shipping, platform_fee: g.fee, discount: g.discount }).select().single();
+    if (error) { fail++; continue; }
+    const { error: e2 } = await sb.from("sales_items").insert(g.items.map((i) => ({ order_id: data.id, product_id: i.product_id, qty: i.qty, sale_price: i.sale_price })));
+    if (e2) { await sb.from("sales_orders").delete().eq("id", data.id); fail++; } else ok++;
+  }
+  closeModal(); toast(`นำเข้าออเดอร์สำเร็จ ${ok}${fail ? ` • ไม่สำเร็จ ${fail}` : ""} • หักสต๊อกแล้ว`); await loadAll();
+}
+const dlPreorderTemplate = () => downloadSheet("template-พรีออเดอร์.xlsx", [["อ้างอิง", "วันที่", "ช่องทาง", "SKU", "จำนวน", "ราคาขาย", "ค่าส่ง", "ค่าธรรมเนียม", "ส่วนลด"], ["PO-001", todayISO(), "Shopee", "KC-001", 2, 59, 30, 0, 0], ["PO-001", "", "", "KC-002", 1, 69, "", "", ""], ["PO-002", todayISO(), "LINE/IG", "KC-001", 5, 55, 0, 0, 20]], "preorders");
+
+/* ================= หน้า 4: วัสดุ & ของเสีย ================= */
+function renderWaste() {
+  const now = new Date();
+  if (!state._wfrom) state._wfrom = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+  if (!state._wto) state._wto = todayISO();
+  const fromT = new Date(state._wfrom + "T00:00:00").getTime(), toT = new Date(state._wto + "T23:59:59").getTime();
+  const inRange = state.usages.filter((u) => { const t = new Date(u.used_at).getTime(); return t >= fromT && t <= toT; });
+  const normalVal = inRange.filter((u) => u.usage_type === "normal_waste").reduce((s, u) => s + Number(u.total_cost), 0);
+  const abnormalVal = inRange.filter((u) => u.usage_type === "abnormal_waste").reduce((s, u) => s + Number(u.total_cost), 0);
+  // ต้นทุนวัสดุที่ขายได้จริงในช่วง (จากออเดอร์)
+  const ordersInRange = state.orders.filter((o) => { const t = new Date(o.sold_at).getTime(); return t >= fromT && t <= toT; });
+  const cogsMaterial = ordersInRange.reduce((s, o) => s + Number(o.material_cost), 0);
+  const wasteRate = (normalVal + cogsMaterial) > 0 ? (normalVal / (normalVal + cogsMaterial)) * 100 : 0;
+
+  const logRows = inRange.slice(0, 40).map((u) => { const m = materialById(u.material_id); return `<tr>
+    <td>${fmtDate(u.used_at)}</td>
+    <td><span class="pill ${u.usage_type === "normal_waste" ? "amber" : "red"}">${u.usage_type === "normal_waste" ? "ของเสียปกติ" : "ของเสียผิดปกติ"}</span></td>
+    <td>${esc(m ? m.name : "?")}</td><td class="num">${qty(u.qty)} ${esc(m?.use_unit || "")}</td><td class="num">${money(u.unit_cost)}</td><td class="num">${money(u.total_cost)}</td>
+    <td>${esc(u.reason || "")}</td><td class="num"><button class="btn-danger" data-act="usage-del" data-id="${u.id}">ลบ</button></td>
+  </tr>`; }).join("");
+
+  // การ์ดต้นทุนเพื่อคืนทุน
+  const skuOpts = state.products.filter((p) => p.active).map((p) => `<option value="${p.id}" ${state._beSku === p.id ? "selected" : ""}>${esc(p.sku_code)} ${esc(p.name)}</option>`).join("");
+  const beP = productById(state._beSku) || state.products.filter((p) => p.active)[0];
+  const beQtyAssume = state._beQty || 100;
+  const beUnit = beP ? wasteAdjCost(beP) : 0;
+  const beAbnormalPer = beQtyAssume > 0 ? abnormalVal / beQtyAssume : 0;
+  const beTotal = beUnit + beAbnormalPer;
+
+  view.innerHTML = `
+    <div class="page-head"><div><h2>Material Usage &amp; Waste Tracking</h2><p class="page-sub">บันทึกการใช้วัสดุ/ของเสีย ระบบหักสต๊อกและแยกต้นทุนให้อัตโนมัติ</p></div>
+      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap"><div class="field" style="margin:0"><label>ตั้งแต่</label><input id="w_from" type="date" value="${state._wfrom}"></div><div class="field" style="margin:0"><label>ถึง</label><input id="w_to" type="date" value="${state._wto}"></div><button class="btn" data-act="usage-new" style="align-self:flex-end">+ บันทึกการใช้วัสดุ</button></div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi"><div class="label">มูลค่าของเสียปกติ</div><div class="value" style="color:var(--amber)">${money(normalVal)}</div><div class="sub">ในช่วงที่เลือก</div></div>
+      <div class="kpi"><div class="label">มูลค่าของเสียผิดปกติ</div><div class="value red">${money(abnormalVal)}</div><div class="sub">ในช่วงที่เลือก</div></div>
+      <div class="kpi"><div class="label">อัตราของเสียปกติ</div><div class="value">${pct(wasteRate)}</div><div class="sub">เทียบต้นทุนวัสดุที่ขายได้</div></div>
+      <div class="kpi"><div class="label">ต้นทุนวัสดุใช้ไปรวม</div><div class="value">${money(normalVal + abnormalVal + cogsMaterial)}</div><div class="sub">ขาย + ของเสีย</div></div>
+    </div>
+    <div class="card"><div class="card-head">ต้นทุนเพื่อคืนทุน (Dashboard — ตัวเลขสมมติ ไม่ใช่ต้นทุนจริงของร้าน)</div>
+      <div style="padding:14px 16px">
+        <div class="form-grid" style="max-width:520px"><div class="field"><label>เลือก SKU</label><select id="be_sku">${skuOpts || '<option value="">— ไม่มีสินค้า —</option>'}</select></div><div class="field"><label>สมมติขาย (ชิ้น)</label><input id="be_qty" type="number" step="any" value="${beQtyAssume}"></div></div>
+        <ul class="breakdown" style="max-width:520px">
+          <li><span>ต้นทุน/ชิ้น (เผื่อของเสียปกติ${beP && Number(beP.normal_waste_pct) > 0 ? " " + qty(beP.normal_waste_pct) + "%" : ""})</span><span class="ro" id="be_unit">${money(beUnit)}</span></li>
+          <li><span>+ เฉลี่ยของเสียผิดปกติ/ชิ้น (${money(abnormalVal)} ÷ <span id="be_qtxt">${qty(beQtyAssume)}</span>)</span><span class="ro" id="be_abn">${money(beAbnormalPer)}</span></li>
+          <li class="total"><span>ต้นทุนเพื่อคืนทุน/ชิ้น</span><span class="ro" id="be_total">${money(beTotal)}</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="card"><div class="card-head">ประวัติการใช้วัสดุ/ของเสีย</div><div class="table-wrap"><table>
+      <thead><tr><th>วันที่</th><th>ประเภท</th><th>วัสดุ</th><th class="num">ปริมาณ</th><th class="num">ต้นทุน/หน่วย</th><th class="num">มูลค่า</th><th>สาเหตุ</th><th class="num"></th></tr></thead>
+      <tbody>${logRows || '<tr><td colspan="8" class="empty">ยังไม่มีบันทึกในช่วงนี้</td></tr>'}</tbody>
+    </table></div></div>`;
+  document.getElementById("w_from").addEventListener("change", (e) => { state._wfrom = e.target.value; renderWaste(); });
+  document.getElementById("w_to").addEventListener("change", (e) => { state._wto = e.target.value; renderWaste(); });
+  document.getElementById("be_sku")?.addEventListener("change", (e) => { state._beSku = e.target.value; renderWaste(); });
+  document.getElementById("be_qty")?.addEventListener("input", (e) => {
+    state._beQty = Number(e.target.value) || 0;
+    const per = state._beQty > 0 ? abnormalVal / state._beQty : 0;
+    document.getElementById("be_abn").textContent = money(per);
+    document.getElementById("be_qtxt").textContent = qty(state._beQty);
+    document.getElementById("be_total").textContent = money(beUnit + per);
+  });
+}
+function usageForm() {
+  openModal("บันทึกการใช้วัสดุ", `
+    <div class="field"><label>ประเภทการใช้วัสดุ</label>
+      <div class="radio-row">
+        <label><input type="radio" name="u_type" value="normal_waste" checked> ของเสียจากการผลิตปกติ</label>
+        <label><input type="radio" name="u_type" value="abnormal_waste"> ของเสียผิดปกติ</label>
+      </div>
+    </div>
+    <div class="field"><label>วัสดุ</label><input id="u_mat" list="uMatList" placeholder="พิมพ์ค้นหาวัสดุ…">${matDatalist("uMatList")}</div>
+    <div class="form-grid"><div class="field"><label>ปริมาณที่ใช้ (หน่วย)</label><input id="u_qty" type="number" step="any" placeholder="0"></div><div class="field"><label>ต้นทุนต่อหน่วย (บาท)</label><input id="u_cost" type="number" step="any" placeholder="auto"></div></div>
+    <div class="field"><label>สาเหตุ</label><textarea id="u_reason" rows="2" placeholder="เช่น ทดลองค่าความแรงเลเซอร์"></textarea></div>
+    <div class="field"><label>วันที่</label><input id="u_date" type="date" value="${todayISO()}"></div>
+    <div class="section-box"><div id="u_preview" class="page-sub">เลือกวัสดุและกรอกปริมาณเพื่อดูมูลค่า</div></div>
+    <div class="form-actions"><button class="btn-ghost" data-act="cancel">ยกเลิก</button><button class="btn" data-act="usage-save">บันทึก (หักสต๊อก)</button></div>`);
+  const upd = () => {
+    const m = resolveMat(val("u_mat"));
+    if (m && val("u_cost") === "") document.getElementById("u_cost").value = Number(m.avg_cost);
+    const q = Number(val("u_qty")), c = Number(val("u_cost")), el = document.getElementById("u_preview");
+    if (m && q > 0) el.innerHTML = `มูลค่าวัสดุที่ใช้ <b style="font-size:16px">${money(q * c)}</b><br>คงเหลือหลังหัก: ${qty(Number(m.qty_on_hand) - q)} ${esc(m.use_unit)}`;
+    else el.textContent = "เลือกวัสดุและกรอกปริมาณเพื่อดูมูลค่า";
+  };
+  document.getElementById("u_mat").addEventListener("input", () => { const m = resolveMat(val("u_mat")); if (m) document.getElementById("u_cost").value = Number(m.avg_cost); upd(); });
+  ["u_qty", "u_cost"].forEach((id) => document.getElementById(id).addEventListener("input", upd));
+}
+async function usageSave() {
+  const m = resolveMat(val("u_mat")); if (!m) return toast("เลือกวัสดุ", true);
+  const q = Number(val("u_qty")); if (!q || q <= 0) return toast("ใส่ปริมาณ", true);
+  const type = document.querySelector('input[name="u_type"]:checked')?.value || "normal_waste";
+  const cost = val("u_cost") === "" ? Number(m.avg_cost) : Number(val("u_cost"));
+  const { error } = await sb.from("material_usages").insert({ material_id: m.id, usage_type: type, qty: q, unit_cost: cost, reason: val("u_reason").trim() || null, used_at: val("u_date") ? new Date(val("u_date")).toISOString() : new Date().toISOString() });
+  if (error) return toast(error.message, true);
+  closeModal(); toast("บันทึกแล้ว หักสต๊อกอัตโนมัติ"); await loadAll();
+}
+async function usageDel(id) {
+  if (!confirm("ลบรายการนี้? ระบบจะคืนวัสดุกลับเข้าสต๊อก")) return;
+  const { error } = await sb.from("material_usages").delete().eq("id", id);
+  if (error) return toast(error.message, true);
+  toast("ลบแล้ว คืนสต๊อก"); await loadAll();
+}
+
+/* ================= หน้า 5: สรุปบัญชี ================= */
+function renderSummary() {
+  const now = new Date();
+  if (!state._from) state._from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+  if (!state._to) state._to = todayISO();
+  const from = state._from, to = state._to, fromT = new Date(from + "T00:00:00").getTime(), toT = new Date(to + "T23:59:59").getTime();
+  const orders = state.orders.filter((o) => { const t = new Date(o.sold_at).getTime(); return t >= fromT && t <= toT; });
+  const orderIds = new Set(orders.map((o) => o.id)), items = state.items.filter((i) => orderIds.has(i.order_id));
+  const revenue = orders.reduce((s, o) => s + Number(o.revenue), 0), gross = orders.reduce((s, o) => s + Number(o.gross_profit), 0), net = orders.reduce((s, o) => s + Number(o.net_profit), 0);
+  const stockValue = state.materials.reduce((s, m) => s + Number(m.qty_on_hand) * Number(m.avg_cost), 0);
+  const byProd = {};
+  for (const i of items) { const p = productById(i.product_id); if (!byProd[i.product_id]) byProd[i.product_id] = { id: i.product_id, name: p ? p.sku_code + " " + p.name : "?", qty: 0, revenue: 0, profit: 0 }; byProd[i.product_id].qty += Number(i.qty); byProd[i.product_id].revenue += Number(i.line_revenue); byProd[i.product_id].profit += Number(i.line_revenue) - Number(i.line_cost); }
+  const best = Object.values(byProd).sort((a, b) => b.qty - a.qty).slice(0, 10);
+  const byDay = (toT - fromT) / 86400000 <= 62, groups = {};
+  for (const o of orders) { const d = new Date(o.sold_at), key = byDay ? d.toISOString().slice(0, 10) : d.toISOString().slice(0, 7); if (!groups[key]) groups[key] = { rev: 0, net: 0 }; groups[key].rev += Number(o.revenue); groups[key].net += Number(o.net_profit); }
+  const gkeys = Object.keys(groups).sort(), maxV = Math.max(1, ...gkeys.map((k) => Math.max(groups[k].rev, groups[k].net)));
+  const bars = gkeys.map((k) => { const g = groups[k], label = byDay ? k.slice(8) + "/" + k.slice(5, 7) : k.slice(5) + "/" + k.slice(2, 4); return `<div class="bar-col"><div style="display:flex;align-items:flex-end;gap:2px;height:130px"><div class="bar rev" style="height:${(g.rev / maxV) * 130}px" title="ยอดขาย ${money(g.rev)}"></div><div class="bar profit" style="height:${(Math.max(0, g.net) / maxV) * 130}px" title="กำไรสุทธิ ${money(g.net)}"></div></div><div class="bar-label">${label}</div></div>`; }).join("");
+  const bestRows = best.map((b, i) => `<tr><td><span class="link-cell" data-act="detail-prod-sales" data-id="${b.id}">${i + 1}. ${esc(b.name)}</span></td><td class="num">${qty(b.qty)}</td><td class="num">${money(b.revenue)}</td><td class="num"><span style="color:${b.profit >= 0 ? "var(--green)" : "var(--red)"}">${money(b.profit)}</span></td></tr>`).join("");
+  view.innerHTML = `
+    <div class="page-head"><div><h2>สรุปบัญชี</h2><p class="page-sub">คลิกชื่อสินค้าเพื่อดูรายละเอียดการขาย</p></div>
+      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap"><div class="field" style="margin:0"><label>ตั้งแต่</label><input id="sum_from" type="date" value="${from}"></div><div class="field" style="margin:0"><label>ถึง</label><input id="sum_to" type="date" value="${to}"></div></div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi"><div class="label">ยอดขายรวม</div><div class="value">${money(revenue)}</div></div>
+      <div class="kpi"><div class="label">กำไรขั้นต้น</div><div class="value">${money(gross)}</div></div>
+      <div class="kpi"><div class="label">กำไรสุทธิ</div><div class="value ${net >= 0 ? "green" : "red"}">${money(net)}</div></div>
+      <div class="kpi"><div class="label">จำนวนออเดอร์</div><div class="value">${orders.length}</div></div>
+      <div class="kpi"><div class="label">มูลค่าสต๊อกคงเหลือ</div><div class="value">${money(stockValue)}</div></div>
+    </div>
+    <div class="card"><div class="card-head">ยอดขาย &amp; กำไรสุทธิ ${byDay ? "รายวัน" : "รายเดือน"}</div><div class="legend"><span><span class="dot" style="background:#bcd0fb"></span>ยอดขาย</span><span><span class="dot" style="background:var(--brand)"></span>กำไรสุทธิ</span></div><div class="bars">${bars || '<div class="empty">ไม่มีข้อมูลในช่วงนี้</div>'}</div></div>
+    <div class="card"><div class="card-head">สินค้าขายดี</div><div class="table-wrap"><table><thead><tr><th>สินค้า</th><th class="num">ขายได้ (ชิ้น)</th><th class="num">ยอดขาย</th><th class="num">กำไร</th></tr></thead><tbody>${bestRows || '<tr><td colspan="4" class="empty">ยังไม่มีการขายในช่วงนี้</td></tr>'}</tbody></table></div></div>`;
+  document.getElementById("sum_from").addEventListener("change", (e) => { state._from = e.target.value; renderSummary(); });
+  document.getElementById("sum_to").addEventListener("change", (e) => { state._to = e.target.value; renderSummary(); });
+}
+function detailProdSales(pid) {
+  const p = productById(pid);
+  const fromT = new Date(state._from + "T00:00:00").getTime(), toT = new Date(state._to + "T23:59:59").getTime();
+  const rows = state.items.filter((i) => i.product_id === pid).map((i) => ({ i, o: orderById(i.order_id) })).filter((x) => x.o && new Date(x.o.sold_at).getTime() >= fromT && new Date(x.o.sold_at).getTime() <= toT).sort((a, b) => new Date(b.o.sold_at) - new Date(a.o.sold_at));
+  const body = rows.map((x) => `<tr><td><span class="link-cell" data-act="detail-order" data-id="${x.o.id}">${fmtDateTime(x.o.sold_at)}</span></td><td>${esc(x.o.channel || "-")}</td><td class="num">${qty(x.i.qty)}</td><td class="num">${money(x.i.line_revenue)}</td><td class="num">${money(Number(x.i.line_revenue) - Number(x.i.line_cost))}</td></tr>`).join("");
+  const tQty = rows.reduce((s, x) => s + Number(x.i.qty), 0), tRev = rows.reduce((s, x) => s + Number(x.i.line_revenue), 0), tPro = rows.reduce((s, x) => s + (Number(x.i.line_revenue) - Number(x.i.line_cost)), 0);
+  openModal("รายละเอียดการขาย — " + (p ? p.sku_code + " " + p.name : ""), `
+    <p class="page-sub">ช่วง ${fmtDate(state._from)} – ${fmtDate(state._to)}</p>
+    <div class="table-wrap"><table><thead><tr><th>เวลา</th><th>ช่องทาง</th><th class="num">จำนวน</th><th class="num">ยอดขาย</th><th class="num">กำไร</th></tr></thead>
+      <tbody>${body || '<tr><td colspan="5" class="empty">ไม่มีการขายในช่วงนี้</td></tr>'}</tbody>
+      <tfoot><tr style="font-weight:700"><td>รวม</td><td></td><td class="num">${qty(tQty)}</td><td class="num">${money(tRev)}</td><td class="num">${money(tPro)}</td></tr></tfoot>
+    </table></div>
+    <div class="form-actions"><button class="btn" data-act="cancel">ปิด</button></div>`);
+}
+
+/* ================= Event delegation ================= */
+function showKebab(btn) {
+  const kind = btn.dataset.kind, id = btn.dataset.id;
+  const items = kind === "sku"
+    ? [{ label: "ดูรายละเอียด", act: "detail-sku" }, { label: "แก้ไข", act: "edit-sku" }, { label: "ลบ", act: "del-sku", danger: true }]
+    : [{ label: "ดูรายละเอียด", act: "detail-order" }, { label: "แก้ไข", act: "edit-order" }, { label: "ลบ", act: "del-order", danger: true }];
+  const pop = document.getElementById("kebabPop");
+  pop.innerHTML = items.map((i) => `<button data-act="${i.act}" data-id="${id}" class="${i.danger ? "danger" : ""}">${i.label}</button>`).join("");
+  const r = btn.getBoundingClientRect();
+  pop.hidden = false;
+  pop.style.top = Math.min(r.bottom + 4, window.innerHeight - pop.offsetHeight - 8) + "px";
+  pop.style.left = Math.min(r.left, window.innerWidth - pop.offsetWidth - 8) + "px";
+}
+function closeKebab() { document.getElementById("kebabPop").hidden = true; }
+
+document.body.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-act]");
+  const inPop = e.target.closest("#kebabPop");
+  if (!inPop) closeKebab();
+  if (!el) return;
+  const act = el.dataset.act, id = el.dataset.id;
+  if (act === "kebab") { showKebab(el); return; }
+  if (inPop) closeKebab();
+  const A = {
+    "add-mat": () => openModal("เพิ่มวัสดุ", materialForm(null)),
+    "edit-mat": () => openModal("แก้ไขวัสดุ", materialForm(materialById(id))),
+    "save-mat": () => saveMaterial(id),
+    "restock": () => { const m = materialById(id); openModal("เติมสต๊อก", restockForm(m)); bindRestockPreview(m); },
+    "save-restock": () => saveRestock(id),
+    "history": () => showHistory(id),
+    "import-mat": () => importMatModal(),
+    "do-import-mat": () => doImportMat(),
+    "dl-mat-template": () => dlMatTemplate(),
+    "add-sku": () => skuForm(null),
+    "edit-sku": () => skuForm(productById(id)),
+    "save-sku": () => saveSKU(id),
+    "detail-sku": () => detailSKU(id),
+    "del-sku": () => delSKU(id),
+    "fbom-add": () => fbomAdd(),
+    "fbom-del": () => fbomDel(Number(el.dataset.i)),
+    "manage-channels": () => manageChannels(),
+    "ch-add": () => chAdd(),
+    "ch-del": () => chDel(Number(el.dataset.i)),
+    "save-channels": () => saveChannels(),
+    "new-sale": () => newSaleForm(),
+    "cart-add": () => cartAdd(),
+    "cart-del": () => { cart.splice(Number(el.dataset.i), 1); renderCart(); recalcFee(); },
+    "save-sale": () => saveSale(),
+    "detail-order": () => detailOrder(id),
+    "edit-order": () => editOrder(id),
+    "save-order": () => saveOrder(id),
+    "eo-item-add": () => eoItemAdd(el.dataset.oid),
+    "eo-item-del": () => eoItemDel(id, el.dataset.oid),
+    "del-order": () => delOrder(id),
+    "import-preorder": () => importPreorderModal(),
+    "do-import-preorder": () => doImportPreorder(),
+    "dl-preorder-template": () => dlPreorderTemplate(),
+    "usage-new": () => usageForm(),
+    "usage-save": () => usageSave(),
+    "usage-del": () => usageDel(id),
+    "detail-prod-sales": () => detailProdSales(id),
+    "cancel": () => closeModal(),
+  };
+  if (A[act]) A[act]();
+});
+function bindRestockPreview(m) { ["r_qty", "r_price"].forEach((id) => document.getElementById(id)?.addEventListener("input", () => updateRestockPreview(m))); }
+window.addEventListener("resize", closeKebab);
+
+loadAll();
+  </script>
+</body>
+</html>
