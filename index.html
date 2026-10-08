@@ -44,12 +44,15 @@ body { font-family: "IBM Plex Sans Thai", system-ui, -apple-system, sans-serif; 
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 18px; }
 .card-head { padding: 12px 16px; border-bottom: 1px solid var(--line); font-weight: 600; }
 
-.table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; white-space: nowrap; }
-th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--line); }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
 th { font-size: 12px; color: var(--muted); font-weight: 600; background: #fafbfc; }
 tbody tr:hover { background: #fafbfc; }
-td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.act, th.act { white-space: nowrap; width: 1%; text-align: right; }
+.cell-main { font-weight: 600; }
+.cell-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .row-warn { background: var(--amber-bg) !important; }
 .link-cell { color: var(--brand); cursor: pointer; font-weight: 600; }
 .link-cell:hover { text-decoration: underline; }
@@ -124,10 +127,31 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand); out
 .legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); padding: 8px 16px 0; }
 .legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: middle; }
 
-@media (max-width: 620px) {
+.col-hide-sm { }
+@media (max-width: 680px) {
+  .view { padding: 12px 10px; }
+  .topbar { padding: 8px 12px; gap: 8px; }
+  .brand { font-size: 15px; width: 100%; }
+  .tabs { order: 3; width: 100%; overflow-x: auto; flex-wrap: nowrap; }
+  .tab { padding: 7px 12px; font-size: 13px; white-space: nowrap; }
+  .topbar-right { margin-left: auto; }
+  .page-head h2 { font-size: 18px; }
+  .kpi-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .kpi { padding: 11px 12px; }
+  .kpi .value { font-size: 18px; }
+  th, td { padding: 9px 10px; }
+  .col-hide-sm { display: none !important; }
   .form-grid { grid-template-columns: 1fr; }
   .cart-line { grid-template-columns: 2fr 54px 1fr 30px; }
   .cart-line .hide-sm { display: none; }
+  .modal-overlay { padding: 10px 6px; }
+  .modal { max-width: 100%; }
+  .modal-body { padding: 14px; }
+  .toolbar { gap: 8px; }
+  .tb-search { width: 100%; flex: 1 1 100%; }
+  .toolbar select { flex: 1 1 45%; }
+  .btn, .btn-ghost { padding: 10px 14px; }
+  .btn-sm { padding: 7px 11px; }
 }
   </style>
 </head>
@@ -394,16 +418,15 @@ function renderStock() {
   const lowCount = state.materials.filter((m) => Number(m.qty_on_hand) <= Number(m.reorder_point) && Number(m.reorder_point) > 0).length;
   const rows = list.map((m) => {
     const low = Number(m.qty_on_hand) <= Number(m.reorder_point) && Number(m.reorder_point) > 0;
+    const sub = [m.code ? esc(m.code) : "", m.category ? esc(m.category) : ""].filter(Boolean).join(" · ");
     return `<tr class="${low ? "row-warn" : ""}">
-      <td>${esc(m.code || "")}</td>
-      <td>${esc(m.name)} ${low ? '<span class="pill amber">ใกล้หมด</span>' : ""}</td>
-      <td>${m.category ? `<span class="pill gray">${esc(m.category)}</span>` : ""}</td>
-      <td>${esc(m.use_unit)}</td>
+      <td><div class="cell-main">${esc(m.name)} ${low ? '<span class="pill amber">ใกล้หมด</span>' : ""}</div>${sub ? `<div class="cell-sub">${sub}</div>` : ""}</td>
+      <td class="col-hide-sm">${esc(m.use_unit)}</td>
       <td class="num">${qty(m.qty_on_hand)}</td>
       <td class="num">${money(m.avg_cost)}</td>
-      <td class="num">${money(Number(m.qty_on_hand) * Number(m.avg_cost))}</td>
-      <td class="num">${qty(m.reorder_point)}</td>
-      <td class="num"><button class="btn-sm" data-act="restock" data-id="${m.id}">+ เติม</button> <button class="btn-sm" data-act="history" data-id="${m.id}">ประวัติ</button> <button class="btn-sm" data-act="edit-mat" data-id="${m.id}">แก้ไข</button></td>
+      <td class="num col-hide-sm">${money(Number(m.qty_on_hand) * Number(m.avg_cost))}</td>
+      <td class="num col-hide-sm">${qty(m.reorder_point)}</td>
+      <td class="act"><button class="kebab-btn" data-act="kebab" data-kind="mat" data-id="${m.id}">⋯</button></td>
     </tr>`;
   }).join("");
   view.innerHTML = `
@@ -430,8 +453,8 @@ function renderStock() {
       <span class="page-sub">${list.length} รายการ</span>
     </div>
     <div class="card"><div class="table-wrap"><table>
-      <thead><tr><th>รหัส</th><th>วัสดุ</th><th>หมวด</th><th>หน่วย</th><th class="num">คงเหลือ</th><th class="num">ต้นทุนเฉลี่ย</th><th class="num">มูลค่าคงเหลือ</th><th class="num">จุดเตือน</th><th class="num"></th></tr></thead>
-      <tbody>${rows || `<tr><td colspan="9" class="empty">${state.materials.length ? "ไม่พบวัสดุที่ค้นหา" : "ยังไม่มีวัสดุ กด “เพิ่มวัสดุ” หรือ “นำเข้า Excel”"}</td></tr>`}</tbody>
+      <thead><tr><th>วัสดุ</th><th class="col-hide-sm">หน่วย</th><th class="num">คงเหลือ</th><th class="num">ต้นทุนเฉลี่ย</th><th class="num col-hide-sm">มูลค่าคงเหลือ</th><th class="num col-hide-sm">จุดเตือน</th><th class="act"></th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="7" class="empty">${state.materials.length ? "ไม่พบวัสดุที่ค้นหา" : "ยังไม่มีวัสดุ กด “เพิ่มวัสดุ” หรือ “นำเข้า Excel”"}</td></tr>`}</tbody>
     </table></div></div>`;
   const s = document.getElementById("stkSearch");
   s.addEventListener("input", (e) => { state.stockSearch = e.target.value; const pos = e.target.selectionStart; renderStock(); const n = document.getElementById("stkSearch"); n.focus(); n.setSelectionRange(pos, pos); });
@@ -510,6 +533,13 @@ async function showHistory(id) {
   if (error) return toast(error.message, true);
   const rows = data.map((p) => `<tr><td>${fmtDate(p.purchased_at)}</td><td class="num">${qty(p.purchase_qty)} ${esc(m.purchase_unit || m.use_unit)}</td><td class="num">${money(p.purchase_unit_price)}</td><td class="num">${qty(p.use_qty)} ${esc(m.use_unit)}</td><td class="num">${money(p.unit_cost)}</td><td class="num">${money(p.total_cost)}</td><td>${esc(p.note || "")}</td></tr>`).join("");
   openModal("ประวัติการเติมสต๊อก — " + m.name, `<div class="table-wrap"><table><thead><tr><th>วันที่</th><th class="num">ซื้อ</th><th class="num">ราคา/หน่วยซื้อ</th><th class="num">เข้าสต๊อก</th><th class="num">ต้นทุน/หน่วยใช้</th><th class="num">รวมเงิน</th><th>หมายเหตุ</th></tr></thead><tbody>${rows || '<tr><td colspan="7" class="empty">ยังไม่มีประวัติ</td></tr>'}</tbody></table></div>`);
+}
+async function delMaterial(id) {
+  const m = materialById(id); if (!m) return;
+  if (!confirm(`ลบวัสดุ “${m.name}” ?\n(ประวัติการซื้อ/ของเสียของวัสดุนี้จะถูกลบด้วย)`)) return;
+  const { error } = await sb.from("materials").delete().eq("id", id);
+  if (error) return toast("ลบไม่ได้ — มีสูตร SKU ใช้วัสดุนี้อยู่ (ลบวัสดุออกจากสูตรก่อน)", true);
+  toast("ลบวัสดุแล้ว"); await loadAll();
 }
 // นำเข้าวัสดุจาก Excel
 let matImportRows = [];
@@ -1022,7 +1052,9 @@ function detailProdSales(pid) {
 /* ================= Event delegation ================= */
 function showKebab(btn) {
   const kind = btn.dataset.kind, id = btn.dataset.id;
-  const items = kind === "sku"
+  const items = kind === "mat"
+    ? [{ label: "+ เติมสต๊อก", act: "restock" }, { label: "ประวัติ", act: "history" }, { label: "แก้ไข", act: "edit-mat" }, { label: "ลบ", act: "del-mat", danger: true }]
+    : kind === "sku"
     ? [{ label: "ดูรายละเอียด", act: "detail-sku" }, { label: "แก้ไข", act: "edit-sku" }, { label: "ลบ", act: "del-sku", danger: true }]
     : [{ label: "ดูรายละเอียด", act: "detail-order" }, { label: "แก้ไข", act: "edit-order" }, { label: "ลบ", act: "del-order", danger: true }];
   const pop = document.getElementById("kebabPop");
@@ -1047,6 +1079,7 @@ document.body.addEventListener("click", (e) => {
     "edit-mat": () => openModal("แก้ไขวัสดุ", materialForm(materialById(id))),
     "save-mat": () => saveMaterial(id),
     "restock": () => { const m = materialById(id); openModal("เติมสต๊อก", restockForm(m)); bindRestockPreview(m); },
+    "del-mat": () => delMaterial(id),
     "save-restock": () => saveRestock(id),
     "history": () => showHistory(id),
     "import-mat": () => importMatModal(),
