@@ -127,8 +127,49 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand); out
 .legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); padding: 8px 16px 0; }
 .legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: middle; }
 
+.pill.k-sheet { background: #e8efff; color: var(--brand); }
+.pill.k-piece { background: var(--green-bg); color: var(--green); }
+.pill.k-length { background: var(--amber-bg); color: var(--amber); }
+.pill.k-consumable { background: #eef0f2; color: var(--muted); }
+.kind-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.field label.kind-card { position: relative; display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; font-weight: 400; margin: 0; }
+.kind-card input { position: absolute; opacity: 0; width: 0; height: 0; }
+.kind-card span { font-size: 12px; color: var(--muted); }
+.kind-card:has(input:checked) { border-color: var(--brand); background: #eef3ff; box-shadow: inset 0 0 0 1px var(--brand); }
+.kind-card:has(input:focus-visible) { outline: 2px solid var(--brand); }
+.inline-2 { display: flex; align-items: center; gap: 6px; }
+.calc-box { background: #eef3ff; border: 1px solid #cdddfd; border-radius: 8px; padding: 10px 12px; font-size: 13px; margin: 0 0 4px; }
+.calc-grid { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 6px; }
+.calc-grid label { display: flex; align-items: center; gap: 4px; font-size: 13px; }
+.calc-grid input { width: 64px; padding: 5px 7px; }
+.bom-add { display: flex; gap: 8px; margin-bottom: 8px; }
+.bom-add input { flex: 1; }
+select.bom-copy { width: auto; max-width: 100%; margin-bottom: 6px; font-size: 13px; padding: 6px 8px; }
+.bom-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.6fr) 76px 28px; gap: 8px; align-items: center; padding: 9px 0; border-bottom: 1px dashed var(--line); }
+.bom-name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.bom-input { font-size: 13px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.bom-cost { text-align: right; font-variant-numeric: tabular-nums; }
+.bom-calc { grid-column: 1 / -1; }
+.num-in { width: 72px; padding: 6px 8px; text-align: right; }
+.bom-total { display: flex; justify-content: space-between; padding: 9px 0 0; font-weight: 700; }
+.sum-box { background: #eef3ff; border-color: #cdddfd; }
+.warn-txt { color: var(--amber); font-size: 12px; font-weight: 600; }
 .col-hide-sm { }
+
+/* ---------- หน้าล็อกอิน ---------- */
+.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.login-card { width: 100%; max-width: 380px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 26px 24px; }
+.login-card .brand { font-size: 20px; margin-bottom: 2px; }
+.login-card .page-sub { margin-bottom: 18px; }
+.login-card .btn { width: 100%; padding: 11px 16px; margin-top: 4px; }
+.login-card .btn:disabled { opacity: .6; cursor: wait; }
+.login-msg { font-size: 13px; border-radius: 8px; padding: 9px 11px; margin-bottom: 12px; }
+.login-msg.err { background: var(--red-bg); color: var(--red); }
+.login-msg.warn { background: var(--amber-bg); color: var(--amber); }
+.user-email { font-size: 12px; color: var(--muted); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 @media (max-width: 680px) {
+  .user-email { display: none; }
   .view { padding: 12px 10px; }
   .topbar { padding: 8px 12px; gap: 8px; }
   .brand { font-size: 15px; width: 100%; }
@@ -144,6 +185,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand); out
   .form-grid { grid-template-columns: 1fr; }
   .cart-line { grid-template-columns: 2fr 54px 1fr 30px; }
   .cart-line .hide-sm { display: none; }
+  .kind-pick { grid-template-columns: 1fr; }
+  .bom-row { grid-template-columns: minmax(0, 1fr) 70px 28px; }
+  .bom-input { grid-row: 2; grid-column: 1 / -1; }
   .modal-overlay { padding: 10px 6px; }
   .modal { max-width: 100%; }
   .modal-body { padding: 14px; }
@@ -156,6 +200,27 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand); out
   </style>
 </head>
 <body>
+  <div class="login-wrap" id="loginScreen" hidden>
+    <form class="login-card" id="loginForm" autocomplete="on">
+      <div class="brand">ระบบหลังบ้าน</div>
+      <p class="page-sub">เข้าสู่ระบบเพื่อจัดการสต๊อกและการขาย</p>
+      <div class="login-msg" id="loginMsg" hidden></div>
+      <div id="loginFields">
+        <div class="field">
+          <label for="loginEmail">อีเมล</label>
+          <input type="email" id="loginEmail" name="email" autocomplete="username" required />
+        </div>
+        <div class="field">
+          <label for="loginPassword">รหัสผ่าน</label>
+          <input type="password" id="loginPassword" name="password" autocomplete="current-password" required />
+        </div>
+        <button type="submit" class="btn" id="loginBtn">เข้าสู่ระบบ</button>
+      </div>
+      <button type="button" class="btn-ghost" id="loginSignOut" hidden style="width:100%">ออกจากระบบ / ใช้บัญชีอื่น</button>
+    </form>
+  </div>
+
+  <div id="appShell" hidden>
   <header class="topbar">
     <div class="brand" id="brandName">ระบบหลังบ้าน</div>
     <nav class="tabs" id="tabs">
@@ -168,10 +233,13 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand); out
     <div class="topbar-right">
       <span class="sync-status" id="syncStatus"></span>
       <button class="btn-ghost" id="refreshBtn" title="รีเฟรชข้อมูล">↻ รีเฟรช</button>
+      <span class="user-email" id="userEmail"></span>
+      <button class="btn-ghost" id="signOutBtn" title="ออกจากระบบ">ออกจากระบบ</button>
     </div>
   </header>
 
   <main id="view" class="view"><div class="loading">กำลังโหลด…</div></main>
+  </div>
 
   <div class="modal-overlay" id="modalOverlay" hidden>
     <div class="modal" id="modal">
@@ -199,9 +267,9 @@ const { SUPABASE_URL, SUPABASE_KEY } = window.APP_CONFIG;
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const state = {
-  materials: [], products: [], bom: [], orders: [], items: [], usages: [], settings: {},
+  materials: [], purchases: [], products: [], bom: [], orders: [], items: [], usages: [], settings: {},
   activeTab: "stock",
-  stockSearch: "", stockCat: "", stockSort: "name_asc",
+  stockSearch: "", stockCat: "", stockKind: "", stockSort: "name_asc",
 };
 
 // ---------- จัดรูปแบบ ----------
@@ -367,8 +435,9 @@ const val = (id) => document.getElementById(id)?.value ?? "";
 async function loadAll() {
   setSync("กำลังซิงก์…");
   try {
-    const [mat, prod, bom, ord, items, usages, settings] = await Promise.all([
+    const [mat, purch, prod, bom, ord, items, usages, settings] = await Promise.all([
       sb.from("materials").select("*"),
+      sb.from("material_purchases").select("*").order("purchased_at", { ascending: false }),
       sb.from("products").select("*"),
       sb.from("product_materials").select("*"),
       sb.from("sales_orders").select("*").order("sold_at", { ascending: false }),
@@ -376,8 +445,8 @@ async function loadAll() {
       sb.from("material_usages").select("*").order("used_at", { ascending: false }),
       sb.from("app_settings").select("*"),
     ]);
-    for (const r of [mat, prod, bom, ord, items, usages, settings]) if (r.error) throw r.error;
-    state.materials = mat.data; state.products = prod.data; state.bom = bom.data;
+    for (const r of [mat, purch, prod, bom, ord, items, usages, settings]) if (r.error) throw r.error;
+    state.materials = mat.data; state.purchases = purch.data; state.products = prod.data; state.bom = bom.data;
     state.orders = ord.data; state.items = items.data; state.usages = usages.data;
     state.settings = {}; for (const s of settings.data) state.settings[s.key] = s.value;
     const brand = state.settings.brand?.name; if (brand) document.getElementById("brandName").textContent = brand;
@@ -396,7 +465,6 @@ document.getElementById("tabs").addEventListener("click", (e) => {
 document.getElementById("refreshBtn").onclick = loadAll;
 function render() { ({ stock: renderStock, sku: renderSKU, pricing: renderPricing, waste: renderWaste, summary: renderSummary }[state.activeTab])(); }
 
-/* ================= หน้า 1: สต๊อก ================= */
 function stockSorter(key) {
   switch (key) {
     case "name_desc": return (a, b) => thCmp(b.name, a.name);
@@ -407,31 +475,61 @@ function stockSorter(key) {
     default: return (a, b) => thCmp(a.name, b.name);
   }
 }
+// ---------- ประเภทวัสดุ ----------
+const KINDS = {
+  sheet: { label: "แผ่น", full: "แผ่นอะคริลิค / แผ่นวัสดุ", ex: "ซื้อเป็นแผ่น แล้วตัดเป็นชิ้นงาน", unit: "แผ่น" },
+  piece: { label: "อะไหล่", full: "อะไหล่นับชิ้น", ex: "ห่วง ตะขอ พวงกุญแจ โซ่ตัดสำเร็จ", unit: "ชิ้น" },
+  length: { label: "วัดความยาว", full: "วัสดุวัดความยาว", ex: "โซ่ม้วน เชือก สาย — ตัดใช้เป็น ซม.", unit: "ซม." },
+  consumable: { label: "สิ้นเปลือง", full: "วัสดุสิ้นเปลือง", ex: "น้ำยาเชื่อม กาว ฟิล์ม เทป", unit: "ขวด" },
+};
+const kindOf = (m) => (m && KINDS[m.kind] ? m.kind : "piece");
+const unitOf = (m) => m?.use_unit || KINDS[kindOf(m)].unit;
+const packOf = (m) => { const k = kindOf(m); return k === "sheet" ? "แผ่น" : k === "consumable" ? unitOf(m) : (m?.purchase_unit || (k === "length" ? "ม้วน" : "แพ็ค")); };
+const isYieldKind = (k) => k === "sheet" || k === "consumable";
+const money4 = (n) => "฿" + Number(n || 0).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+const kindPill = (m) => `<span class="pill k-${kindOf(m)}">${KINDS[kindOf(m)].label}</span>`;
+function fmtQty(m, q) {
+  const k = kindOf(m), n = Number(q || 0);
+  if (k === "length" && Math.abs(n) >= 100) return `${qty(n)} ซม. (${qty(n / 100)} ม.)`;
+  return `${k === "sheet" ? n.toLocaleString("th-TH", { maximumFractionDigits: 2 }) : qty(n)} ${unitOf(m)}`;
+}
+const lotsOf = (mid) => state.purchases.filter((p) => p.material_id === mid);
+const usedInCount = (mid) => new Set(state.bom.filter((b) => b.material_id === mid).map((b) => b.product_id)).size;
+function guessKind(name, unit) {
+  const s = (name || "") + " " + (unit || "");
+  if (/น้ำยา|กาว|ฟิล์ม|เทป|สเปรย์/.test(s)) return "consumable";
+  if (/แผ่น|อะคริลิค|อคริลิค|acrylic/i.test(s)) return "sheet";
+  if (/^(ซม|cm|เซน)/i.test(String(unit || "").trim())) return "length";
+  return "piece";
+}
+
+/* ================= หน้า 1: สต๊อก ================= */
 function renderStock() {
   const cats = [...new Set(state.materials.map((m) => m.category).filter(Boolean))].sort(thCmp);
   let list = state.materials.slice();
   const q = state.stockSearch.trim().toLowerCase();
   if (q) list = list.filter((m) => (m.name || "").toLowerCase().includes(q) || (m.code || "").toLowerCase().includes(q));
   if (state.stockCat) list = list.filter((m) => (m.category || "") === state.stockCat);
+  if (state.stockKind) list = list.filter((m) => kindOf(m) === state.stockKind);
   list.sort(stockSorter(state.stockSort));
   const totalValue = state.materials.reduce((s, m) => s + Number(m.qty_on_hand) * Number(m.avg_cost), 0);
   const lowCount = state.materials.filter((m) => Number(m.qty_on_hand) <= Number(m.reorder_point) && Number(m.reorder_point) > 0).length;
   const rows = list.map((m) => {
     const low = Number(m.qty_on_hand) <= Number(m.reorder_point) && Number(m.reorder_point) > 0;
-    const sub = [m.code ? esc(m.code) : "", m.category ? esc(m.category) : ""].filter(Boolean).join(" · ");
+    const used = usedInCount(m.id);
+    const sub = [m.code ? esc(m.code) : "", m.category ? esc(m.category) : "", used ? `ใช้ใน ${used} SKU` : ""].filter(Boolean).join(" · ");
     return `<tr class="${low ? "row-warn" : ""}">
-      <td><div class="cell-main">${esc(m.name)} ${low ? '<span class="pill amber">ใกล้หมด</span>' : ""}</div>${sub ? `<div class="cell-sub">${sub}</div>` : ""}</td>
-      <td class="col-hide-sm">${esc(m.use_unit)}</td>
-      <td class="num">${qty(m.qty_on_hand)}</td>
-      <td class="num">${money(m.avg_cost)}</td>
+      <td><div class="cell-main">${kindPill(m)} ${esc(m.name)} ${low ? '<span class="pill amber">ใกล้หมด</span>' : ""}</div>${sub ? `<div class="cell-sub">${sub}</div>` : ""}</td>
+      <td class="num">${fmtQty(m, m.qty_on_hand)}</td>
+      <td class="num"><span class="link-cell" data-act="history" data-id="${m.id}">${money4(m.avg_cost)}</span><div class="cell-sub">ต่อ${esc(unitOf(m))}</div></td>
       <td class="num col-hide-sm">${money(Number(m.qty_on_hand) * Number(m.avg_cost))}</td>
-      <td class="num col-hide-sm">${qty(m.reorder_point)}</td>
-      <td class="act"><button class="kebab-btn" data-act="kebab" data-kind="mat" data-id="${m.id}">⋯</button></td>
+      <td class="act"><button class="btn-sm col-hide-sm" data-act="restock" data-id="${m.id}">+ ซื้อเข้า</button> <button class="kebab-btn" data-act="kebab" data-kind="mat" data-id="${m.id}">⋯</button></td>
     </tr>`;
   }).join("");
+  const kindOpts = Object.entries(KINDS).map(([k, K]) => `<option value="${k}" ${state.stockKind === k ? "selected" : ""}>${K.full}</option>`).join("");
   view.innerHTML = `
     <div class="page-head">
-      <div><h2>สต๊อกวัสดุ</h2><p class="page-sub">ฐานข้อมูลกลางของวัสดุทั้งหมด • ต้นทุนเฉลี่ยถ่วงน้ำหนักอัปเดตอัตโนมัติ</p></div>
+      <div><h2>สต๊อกวัสดุ</h2><p class="page-sub">ซื้อของเข้า กด “+ ซื้อเข้า” แล้วกรอกตามบิล • ต้นทุนต่อหน่วย = เงินที่จ่ายรวมทุกล็อต ÷ จำนวนที่ได้ (กดที่ราคาเพื่อดู/แก้ล็อต)</p></div>
       <div style="display:flex;gap:8px"><button class="btn-ghost" data-act="import-mat">⬆ นำเข้า Excel</button><button class="btn" data-act="add-mat">+ เพิ่มวัสดุ</button></div>
     </div>
     <div class="kpi-row">
@@ -441,7 +539,8 @@ function renderStock() {
     </div>
     <div class="toolbar">
       <input id="stkSearch" class="tb-search" placeholder="🔍 ค้นหา รหัส/ชื่อวัสดุ" value="${esc(state.stockSearch)}">
-      <select id="stkCat"><option value="">ทุกหมวด</option>${cats.map((c) => `<option value="${esc(c)}" ${state.stockCat === c ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>
+      <select id="stkKind"><option value="">ทุกประเภท</option>${kindOpts}</select>
+      ${cats.length ? `<select id="stkCat"><option value="">ทุกหมวด</option>${cats.map((c) => `<option value="${esc(c)}" ${state.stockCat === c ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>` : ""}
       <select id="stkSort">
         <option value="name_asc" ${state.stockSort === "name_asc" ? "selected" : ""}>ชื่อ ก→ฮ / A→Z</option>
         <option value="name_desc" ${state.stockSort === "name_desc" ? "selected" : ""}>ชื่อ ฮ→ก / Z→A</option>
@@ -453,86 +552,164 @@ function renderStock() {
       <span class="page-sub">${list.length} รายการ</span>
     </div>
     <div class="card"><div class="table-wrap"><table>
-      <thead><tr><th>วัสดุ</th><th class="col-hide-sm">หน่วย</th><th class="num">คงเหลือ</th><th class="num">ต้นทุนเฉลี่ย</th><th class="num col-hide-sm">มูลค่าคงเหลือ</th><th class="num col-hide-sm">จุดเตือน</th><th class="act"></th></tr></thead>
-      <tbody>${rows || `<tr><td colspan="7" class="empty">${state.materials.length ? "ไม่พบวัสดุที่ค้นหา" : "ยังไม่มีวัสดุ กด “เพิ่มวัสดุ” หรือ “นำเข้า Excel”"}</td></tr>`}</tbody>
+      <thead><tr><th>วัสดุ</th><th class="num">คงเหลือ</th><th class="num">ต้นทุน/หน่วย</th><th class="num col-hide-sm">มูลค่าคงเหลือ</th><th class="act"></th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="5" class="empty">${state.materials.length ? "ไม่พบวัสดุที่ค้นหา" : "ยังไม่มีวัสดุ กด “เพิ่มวัสดุ” หรือ “นำเข้า Excel”"}</td></tr>`}</tbody>
     </table></div></div>`;
   const s = document.getElementById("stkSearch");
   s.addEventListener("input", (e) => { state.stockSearch = e.target.value; const pos = e.target.selectionStart; renderStock(); const n = document.getElementById("stkSearch"); n.focus(); n.setSelectionRange(pos, pos); });
-  document.getElementById("stkCat").addEventListener("change", (e) => { state.stockCat = e.target.value; renderStock(); });
+  document.getElementById("stkKind").addEventListener("change", (e) => { state.stockKind = e.target.value; renderStock(); });
+  document.getElementById("stkCat")?.addEventListener("change", (e) => { state.stockCat = e.target.value; renderStock(); });
   document.getElementById("stkSort").addEventListener("change", (e) => { state.stockSort = e.target.value; renderStock(); });
 }
+
+// ฟอร์มวัสดุ — ช่องที่ถามเปลี่ยนตามประเภท
 function materialForm(m) {
+  const k = kindOf(m), upp = Number(m?.units_per_purchase) || 1;
   const cats = [...new Set(state.materials.map((x) => x.category).filter(Boolean))].sort(thCmp);
+  const cards = Object.entries(KINDS).map(([key, K]) => `<label class="kind-card"><input type="radio" name="f_kind" value="${key}" ${key === k ? "checked" : ""}><b>${K.full}</b><span>${K.ex}</span></label>`).join("");
   return `
+    <div class="field"><label>วัสดุนี้เป็นแบบไหน?</label><div class="kind-pick">${cards}</div></div>
     <div class="form-grid">
-      <div class="field"><label>รหัสวัสดุ</label><input id="f_code" value="${esc(m?.code || "")}" placeholder="M-001"></div>
-      <div class="field"><label>หมวด</label><input id="f_cat" list="catList" value="${esc(m?.category || "")}" placeholder="เช่น หนัง / โลหะ / บรรจุภัณฑ์"><datalist id="catList">${cats.map((c) => `<option value="${esc(c)}">`).join("")}</datalist></div>
-      <div class="field full"><label>ชื่อวัสดุ</label><input id="f_name" value="${esc(m?.name || "")}" placeholder="เช่น สายหนัง, ห่วงกุญแจ"></div>
-      <div class="field"><label>หน่วยที่ใช้ผลิต <span class="hint">(หน่วยย่อย)</span></label><input id="f_use" value="${esc(m?.use_unit || "ชิ้น")}" placeholder="ชิ้น / ซม. / กรัม"></div>
-      <div class="field"><label>จุดเตือนสต๊อกต่ำ</label><input id="f_reorder" type="number" step="any" value="${m?.reorder_point ?? 0}"></div>
-      <div class="field"><label>หน่วยที่ซื้อ <span class="hint">(หน่วยใหญ่)</span></label><input id="f_purch" value="${esc(m?.purchase_unit || "")}" placeholder="แพ็ค / เมตร / กิโล"></div>
-      <div class="field"><label>1 หน่วยซื้อ = กี่หน่วยใช้ผลิต</label><input id="f_conv" type="number" step="any" value="${m?.units_per_purchase ?? 1}"></div>
+      <div class="field full"><label>ชื่อวัสดุ</label><input id="f_name" value="${esc(m?.name || "")}" placeholder="เช่น แผ่นอะคริลิคมิลเลอร์ 2 มิล 30x60"></div>
+      <div class="field"><label>หมวด <span class="hint">(ไม่บังคับ)</span></label><input id="f_cat" list="catList" value="${esc(m?.category || "")}" placeholder="เช่น อะคริลิค / ตะขอ / โซ่"><datalist id="catList">${cats.map((c) => `<option value="${esc(c)}">`).join("")}</datalist></div>
+      <div class="field"><label>รหัส <span class="hint">(ไม่บังคับ)</span></label><input id="f_code" value="${esc(m?.code || "")}" placeholder="M-001"></div>
+      <div class="field full" data-kinds="sheet"><label>ขนาดแผ่น (ซม.) <span class="hint">— ไม่บังคับ ใช้ช่วยประมาณว่าตัดได้กี่ชิ้น</span></label><div class="inline-2"><input id="f_sw" type="number" step="any" placeholder="กว้าง" value="${m?.sheet_w_cm ?? ""}"><span>×</span><input id="f_sh" type="number" step="any" placeholder="ยาว" value="${m?.sheet_h_cm ?? ""}"></div></div>
+      <div class="field" data-kinds="piece"><label>นับเป็น</label><input id="f_use_piece" value="${esc(k === "piece" ? unitOf(m) : "ชิ้น")}" placeholder="ชิ้น / คู่ / อัน"></div>
+      <div class="field" data-kinds="consumable"><label>นับเป็น</label><input id="f_use_cons" value="${esc(k === "consumable" ? unitOf(m) : "ขวด")}" placeholder="ขวด / หลอด / ม้วน"></div>
+      <div class="field" data-kinds="piece length"><label>ปกติซื้อมาเป็น</label><input id="f_purch" value="${esc(k === "piece" || k === "length" ? m?.purchase_unit || "" : "")}" placeholder="แพ็ค / ถุง / ม้วน"></div>
+      <div class="field" data-kinds="piece"><label>ปกติ 1 <span class="lbl-pack">แพ็ค</span> มีกี่ชิ้น <span class="hint">(ค่าตั้งต้นตอนซื้อ)</span></label><input id="f_upp" type="number" step="any" value="${k === "piece" ? upp : 1}"></div>
+      <div class="field" data-kinds="length"><label>ปกติ 1 <span class="lbl-pack">ม้วน</span> ยาวกี่เมตร</label><input id="f_uppm" type="number" step="any" value="${k === "length" ? upp / 100 : 1}"></div>
+      <div class="field"><label>เตือนเมื่อเหลือน้อยกว่า <span class="hint lbl-unit"></span></label><input id="f_reorder" type="number" step="any" value="${m?.reorder_point ?? 0}"></div>
     </div>
-    ${m ? "" : `<div class="section-box"><h4>สต๊อกเริ่มต้น (ไม่บังคับ)</h4><div class="form-grid">
-      <div class="field"><label>จำนวนเริ่มต้น <span class="hint">(หน่วยซื้อ)</span></label><input id="f_initqty" type="number" step="any" placeholder="0"></div>
-      <div class="field"><label>ราคาต้นทุน/หน่วยซื้อ <span class="hint">(บาท)</span></label><input id="f_initcost" type="number" step="any" placeholder="0.00"></div>
-    </div><p class="hint" style="margin:0">ใส่ทั้งสองช่องเพื่อบันทึกสต๊อก+ต้นทุนเริ่มต้น (จะกลายเป็นล็อตแรกในประวัติ)</p></div>`}
+    ${m ? (lotsOf(m.id).length ? `<p class="hint" style="margin-top:0">ถ้าเปลี่ยนประเภท/หน่วย ให้ตรวจล็อตเดิมใน “ประวัติการซื้อ” ด้วย (จำนวนในล็อตเดิมจะไม่ถูกแปลงให้)</p>` : "") : `<div class="section-box"><h4>ซื้อมาแล้ว? บันทึกล็อตแรกเลย <span class="hint">(ไม่บังคับ)</span></h4><div id="f_initPurchase"></div></div>`}
     <div class="field"><label>หมายเหตุ</label><input id="f_note" value="${esc(m?.note || "")}"></div>
     <div class="form-actions"><button class="btn-ghost" data-act="cancel">ยกเลิก</button><button class="btn" data-act="save-mat" data-id="${m?.id || ""}">บันทึก</button></div>`;
 }
-async function saveMaterial(id) {
-  const payload = {
-    code: val("f_code").trim() || null, category: val("f_cat").trim() || null, name: val("f_name").trim(),
-    use_unit: val("f_use").trim() || "ชิ้น", purchase_unit: val("f_purch").trim() || null,
-    units_per_purchase: Number(val("f_conv")) || 1, reorder_point: Number(val("f_reorder")) || 0, note: val("f_note").trim() || null,
+// อ่านค่าจากฟอร์มวัสดุ → รูปแบบเดียวกับแถว materials
+function draftMaterial() {
+  const kind = document.querySelector('input[name="f_kind"]:checked')?.value || "piece";
+  const d = { kind, sheet_w_cm: null, sheet_h_cm: null };
+  if (kind === "sheet") Object.assign(d, { use_unit: "แผ่น", purchase_unit: "แผ่น", units_per_purchase: 1, sheet_w_cm: Number(val("f_sw")) || null, sheet_h_cm: Number(val("f_sh")) || null });
+  if (kind === "piece") Object.assign(d, { use_unit: val("f_use_piece").trim() || "ชิ้น", purchase_unit: val("f_purch").trim() || "แพ็ค", units_per_purchase: Number(val("f_upp")) || 1 });
+  if (kind === "length") Object.assign(d, { use_unit: "ซม.", purchase_unit: val("f_purch").trim() || "ม้วน", units_per_purchase: (Number(val("f_uppm")) || 1) * 100 });
+  if (kind === "consumable") { const u = val("f_use_cons").trim() || "ขวด"; Object.assign(d, { use_unit: u, purchase_unit: u, units_per_purchase: 1 }); }
+  return d;
+}
+function openMaterialForm(m) {
+  openModal(m ? "แก้ไขวัสดุ" : "เพิ่มวัสดุ", materialForm(m));
+  const refresh = () => {
+    const d = draftMaterial();
+    document.querySelectorAll("#modalBody [data-kinds]").forEach((el) => (el.hidden = !el.dataset.kinds.split(" ").includes(d.kind)));
+    document.querySelectorAll("#modalBody .lbl-pack").forEach((el) => (el.textContent = d.purchase_unit));
+    document.querySelector("#modalBody .lbl-unit").textContent = `(${d.use_unit})`;
+    const box = document.getElementById("f_initPurchase");
+    if (box) {
+      const keep = {}; box.querySelectorAll("input").forEach((i) => (keep[i.id] = i.value));
+      box.innerHTML = purchaseFieldsHtml("ip", d, null);
+      for (const [id, v] of Object.entries(keep)) { const el = document.getElementById(id); if (el && !/_upp/.test(id)) el.value = v; }
+      bindPurchase("ip", d, null);
+    }
   };
+  document.querySelectorAll('#modalBody input[name="f_kind"], #f_purch, #f_upp, #f_uppm, #f_use_piece, #f_use_cons').forEach((el) => el.addEventListener("change", refresh));
+  refresh();
+}
+async function saveMaterial(id) {
+  const d = draftMaterial();
+  const payload = { ...d, code: val("f_code").trim() || null, category: val("f_cat").trim() || null, name: val("f_name").trim(), reorder_point: Number(val("f_reorder")) || 0, note: val("f_note").trim() || null };
   if (!payload.name) return toast("กรุณาใส่ชื่อวัสดุ", true);
+  const init = !id && document.getElementById("ip_qty") ? readPurchase("ip", d) : null;
+  if (init && init.purchase_qty > 0 && val("ip_total") === "") return toast("ใส่เงินที่จ่ายของล็อตแรก (หรือลบจำนวนออก)", true);
   if (id) {
     const { error } = await sb.from("materials").update(payload).eq("id", id);
     if (error) return toast(error.message, true);
   } else {
     const { data, error } = await sb.from("materials").insert(payload).select().single();
     if (error) return toast(error.message, true);
-    const iq = Number(val("f_initqty")), ic = Number(val("f_initcost"));
-    if (iq > 0) await sb.from("material_purchases").insert({ material_id: data.id, purchase_qty: iq, purchase_unit_price: ic || 0 });
+    if (init && init.purchase_qty > 0) {
+      const { error: e2 } = await sb.from("material_purchases").insert(purchaseRow(data.id, init));
+      if (e2) toast("เพิ่มวัสดุแล้ว แต่บันทึกล็อตแรกไม่สำเร็จ: " + e2.message, true);
+    }
   }
   closeModal(); toast(id ? "แก้ไขวัสดุแล้ว" : "เพิ่มวัสดุแล้ว"); await loadAll();
 }
-function restockForm(m) {
-  const unit = m.purchase_unit || m.use_unit;
-  return `
-    <p class="page-sub">เติมสต๊อก: <b>${esc(m.name)}</b> • คงเหลือ ${qty(m.qty_on_hand)} ${esc(m.use_unit)} • ต้นทุนเฉลี่ย ${money(m.avg_cost)}/${esc(m.use_unit)}</p>
-    <div class="form-grid">
-      <div class="field"><label>จำนวนที่ซื้อ <span class="hint">(${esc(unit)})</span></label><input id="r_qty" type="number" step="any" placeholder="0"></div>
-      <div class="field"><label>ราคาต่อ ${esc(unit)} <span class="hint">(บาท)</span></label><input id="r_price" type="number" step="any" placeholder="0.00"></div>
-      <div class="field"><label>วันที่ซื้อ</label><input id="r_date" type="date" value="${todayISO()}"></div>
-      <div class="field"><label>หมายเหตุ</label><input id="r_note" placeholder="เลขบิล / ร้าน"></div>
-    </div>
-    <div class="section-box"><div id="r_preview" class="page-sub">กรอกจำนวนและราคาเพื่อดูผลลัพธ์</div></div>
-    <div class="form-actions"><button class="btn-ghost" data-act="cancel">ยกเลิก</button><button class="btn" data-act="save-restock" data-id="${m.id}">บันทึกการเติม</button></div>`;
+
+// ---------- ซื้อเข้า (ล็อต) — กรอกตามบิล ----------
+function purchaseFieldsHtml(px, m, lot) {
+  const k = kindOf(m), pack = esc(packOf(m)), unit = esc(unitOf(m));
+  const upp = Number(lot?.units_per_pack ?? m.units_per_purchase) || 1;
+  return `<div class="form-grid">
+    <div class="field"><label>ซื้อมากี่${pack}</label><input id="${px}_qty" type="number" step="any" min="0" value="${lot ? Number(lot.purchase_qty) : ""}" placeholder="0"></div>
+    ${k === "piece" ? `<div class="field"><label>${pack}ละกี่${unit}</label><input id="${px}_upp" type="number" step="any" min="0" value="${upp}"></div>` : ""}
+    ${k === "length" ? `<div class="field"><label>${pack}ละกี่เมตร</label><input id="${px}_uppm" type="number" step="any" min="0" value="${upp / 100}"></div>` : ""}
+    <div class="field"><label>จ่ายรวมทั้งหมด (บาท) <span class="hint">ตามบิล รวมค่าส่งได้</span></label><input id="${px}_total" type="number" step="any" min="0" value="${lot ? Number(lot.total_cost) : ""}" placeholder="0.00"></div>
+    <div class="field"><label>วันที่ซื้อ</label><input id="${px}_date" type="date" value="${lot ? new Date(lot.purchased_at).toISOString().slice(0, 10) : todayISO()}"></div>
+    <div class="field ${k === "piece" || k === "length" ? "full" : ""}"><label>หมายเหตุ</label><input id="${px}_note" value="${esc(lot?.note || "")}" placeholder="ร้าน / เลขบิล"></div>
+  </div><div class="calc-box" id="${px}_preview"></div>`;
 }
-function updateRestockPreview(m) {
-  const pq = Number(val("r_qty")), pp = Number(val("r_price")), el = document.getElementById("r_preview"); if (!el) return;
-  if (!pq || pq <= 0) { el.textContent = "กรอกจำนวนและราคาเพื่อดูผลลัพธ์"; return; }
-  const conv = Number(m.units_per_purchase) || 1, useQty = pq * conv, unitCostNew = pp / conv;
-  const curQty = Number(m.qty_on_hand), curAvg = Number(m.avg_cost), newQty = curQty + useQty;
-  const newAvg = newQty > 0 ? (curQty * curAvg + useQty * unitCostNew) / newQty : 0;
-  el.innerHTML = `เพิ่ม <b>${qty(useQty)} ${esc(m.use_unit)}</b> • รวมเงิน <b>${money(pq * pp)}</b><br>ต้นทุนล็อตนี้ ${money(unitCostNew)}/${esc(m.use_unit)} → คงเหลือใหม่ <b>${qty(newQty)}</b> • ต้นทุนเฉลี่ยใหม่ <b>${money(newAvg)}</b>`;
+function readPurchase(px, m) {
+  const k = kindOf(m), q = Number(val(px + "_qty")) || 0, total = Number(val(px + "_total")) || 0;
+  let upp = 1;
+  if (k === "piece") upp = Number(val(px + "_upp")) || 1;
+  if (k === "length") upp = (Number(val(px + "_uppm")) || 1) * 100;
+  const useQty = q * upp;
+  return { purchase_qty: q, units_per_pack: upp, total_cost: total, use_qty: useQty, unit_cost: useQty > 0 ? total / useQty : 0, date: val(px + "_date"), note: val(px + "_note").trim() || null };
 }
-async function saveRestock(id) {
-  const pq = Number(val("r_qty")), pp = Number(val("r_price"));
-  if (!pq || pq <= 0) return toast("กรุณาใส่จำนวน", true);
-  if (val("r_price") === "") return toast("กรุณาใส่ราคา", true);
-  const { error } = await sb.from("material_purchases").insert({ material_id: id, purchase_qty: pq, purchase_unit_price: pp, purchased_at: val("r_date") ? new Date(val("r_date")).toISOString() : new Date().toISOString(), note: val("r_note").trim() || null });
+const purchaseRow = (mid, r) => ({ material_id: mid, purchase_qty: r.purchase_qty, units_per_pack: r.units_per_pack, total_cost: r.total_cost, purchase_unit_price: r.purchase_qty > 0 ? r.total_cost / r.purchase_qty : 0, purchased_at: r.date ? new Date(r.date).toISOString() : new Date().toISOString(), note: r.note });
+function purchasePreview(px, m, lotId) {
+  const el = document.getElementById(px + "_preview"); if (!el) return;
+  const r = readPurchase(px, m), unit = esc(unitOf(m));
+  if (!(r.purchase_qty > 0)) { el.innerHTML = `<span class="page-sub">กรอกจำนวนและเงินที่จ่าย ระบบจะคิดต้นทุนต่อ${unit}ให้</span>`; return; }
+  const others = m.id ? lotsOf(m.id).filter((p) => p.id !== lotId) : [];
+  const sumT = others.reduce((s, p) => s + Number(p.total_cost), 0) + r.total_cost, sumU = others.reduce((s, p) => s + Number(p.use_qty), 0) + r.use_qty;
+  el.innerHTML = `ได้ทั้งหมด <b>${fmtQty(m, r.use_qty)}</b> → ล็อตนี้ตกราคา <b>${money4(r.unit_cost)}</b> ต่อ${unit}`
+    + (others.length ? `<br>ต้นทุนวัสดุนี้ (เฉลี่ยทุกล็อต) จะเป็น <b>${money4(sumU > 0 ? sumT / sumU : 0)}</b> ต่อ${unit} <span class="hint">(เดิม ${money4(m.avg_cost)})</span>` : "");
+}
+function bindPurchase(px, m, lotId) {
+  document.querySelectorAll(`[id^="${px}_"]`).forEach((el) => el.addEventListener("input", () => purchasePreview(px, m, lotId)));
+  purchasePreview(px, m, lotId);
+}
+function purchaseForm(m, lot) {
+  openModal((lot ? "แก้ไขล็อต — " : "ซื้อเข้า — ") + m.name, `
+    <p class="page-sub">${kindPill(m)} คงเหลือตอนนี้ ${fmtQty(m, m.qty_on_hand)} • ต้นทุน ${money4(m.avg_cost)} ต่อ${esc(unitOf(m))}</p>
+    ${purchaseFieldsHtml("p", m, lot)}
+    <div class="form-actions"><button class="btn-ghost" data-act="${lot ? "history" : "cancel"}" data-id="${m.id}">${lot ? "← กลับ" : "ยกเลิก"}</button><button class="btn" data-act="save-purchase" data-id="${m.id}" data-lot="${lot?.id || ""}">${lot ? "บันทึกการแก้ไข" : "บันทึกการซื้อ"}</button></div>`);
+  bindPurchase("p", m, lot?.id);
+}
+async function savePurchase(mid, lotId) {
+  const m = materialById(mid), r = readPurchase("p", m);
+  if (!(r.purchase_qty > 0)) return toast("กรุณาใส่จำนวนที่ซื้อ", true);
+  if (val("p_total") === "") return toast("กรุณาใส่เงินที่จ่าย", true);
+  const row = purchaseRow(mid, r);
+  const { error } = lotId ? await sb.from("material_purchases").update(row).eq("id", lotId) : await sb.from("material_purchases").insert(row);
   if (error) return toast(error.message, true);
-  closeModal(); toast("เติมสต๊อกแล้ว ต้นทุนเฉลี่ยอัปเดตอัตโนมัติ"); await loadAll();
+  toast(lotId ? "แก้ไขล็อตแล้ว คำนวณต้นทุนใหม่แล้ว" : "บันทึกการซื้อแล้ว");
+  await loadAll();
+  if (lotId) showHistory(mid); else closeModal();
 }
-async function showHistory(id) {
-  const m = materialById(id);
-  const { data, error } = await sb.from("material_purchases").select("*").eq("material_id", id).order("purchased_at", { ascending: false });
+function showHistory(id) {
+  const m = materialById(id); if (!m) return;
+  const lots = lotsOf(id).slice().sort((a, b) => new Date(b.purchased_at) - new Date(a.purchased_at));
+  const k = kindOf(m), unit = esc(unitOf(m));
+  const rows = lots.map((p) => {
+    const bought = k === "piece" || k === "length" ? `${qty(p.purchase_qty)} ${esc(packOf(m))} × ${k === "length" ? qty(p.units_per_pack / 100) + " ม." : qty(p.units_per_pack) + " " + unit}` : `${qty(p.purchase_qty)} ${esc(packOf(m))}`;
+    return `<tr><td>${fmtDate(p.purchased_at)}${p.note ? `<div class="cell-sub">${esc(p.note)}</div>` : ""}</td><td>${bought}</td><td class="num">${money(p.total_cost)}</td><td class="num">${money4(p.unit_cost)}</td>
+      <td class="act"><button class="btn-sm" data-act="edit-lot" data-id="${p.id}">แก้ไข</button> <button class="btn-danger" data-act="del-lot" data-id="${p.id}">ลบ</button></td></tr>`;
+  }).join("");
+  const sumT = lots.reduce((s, p) => s + Number(p.total_cost), 0), sumU = lots.reduce((s, p) => s + Number(p.use_qty), 0);
+  openModal("ประวัติการซื้อ — " + m.name, `
+    <p class="page-sub">ต้นทุนต่อ${unit} = เงินที่จ่ายรวมทุกล็อต ÷ จำนวนที่ได้รวม • ซื้อผิด แก้หรือลบล็อตได้เลย ระบบคำนวณสต๊อกและต้นทุนใหม่ให้</p>
+    <div class="table-wrap"><table><thead><tr><th>วันที่</th><th>ซื้อ</th><th class="num">จ่าย</th><th class="num">ต่อ${unit}</th><th class="act"></th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="5" class="empty">ยังไม่มีประวัติการซื้อ</td></tr>'}</tbody>
+      ${lots.length ? `<tfoot><tr style="font-weight:700"><td>รวม</td><td>${fmtQty(m, sumU)}</td><td class="num">${money(sumT)}</td><td class="num">${money4(sumU > 0 ? sumT / sumU : 0)}</td><td></td></tr></tfoot>` : ""}
+    </table></div>
+    <div class="form-actions"><button class="btn-ghost" data-act="cancel">ปิด</button><button class="btn" data-act="restock" data-id="${m.id}">+ ซื้อเข้า</button></div>`);
+}
+async function delPurchase(lotId) {
+  const lot = state.purchases.find((p) => p.id === lotId), m = lot && materialById(lot.material_id); if (!lot) return;
+  if (!confirm(`ลบล็อตวันที่ ${fmtDate(lot.purchased_at)} (${money(lot.total_cost)}) ?\nสต๊อกจะลดลง ${fmtQty(m, lot.use_qty)} และคำนวณต้นทุนใหม่`)) return;
+  const { error } = await sb.from("material_purchases").delete().eq("id", lotId);
   if (error) return toast(error.message, true);
-  const rows = data.map((p) => `<tr><td>${fmtDate(p.purchased_at)}</td><td class="num">${qty(p.purchase_qty)} ${esc(m.purchase_unit || m.use_unit)}</td><td class="num">${money(p.purchase_unit_price)}</td><td class="num">${qty(p.use_qty)} ${esc(m.use_unit)}</td><td class="num">${money(p.unit_cost)}</td><td class="num">${money(p.total_cost)}</td><td>${esc(p.note || "")}</td></tr>`).join("");
-  openModal("ประวัติการเติมสต๊อก — " + m.name, `<div class="table-wrap"><table><thead><tr><th>วันที่</th><th class="num">ซื้อ</th><th class="num">ราคา/หน่วยซื้อ</th><th class="num">เข้าสต๊อก</th><th class="num">ต้นทุน/หน่วยใช้</th><th class="num">รวมเงิน</th><th>หมายเหตุ</th></tr></thead><tbody>${rows || '<tr><td colspan="7" class="empty">ยังไม่มีประวัติ</td></tr>'}</tbody></table></div>`);
+  toast("ลบล็อตแล้ว"); await loadAll(); showHistory(m.id);
 }
 async function delMaterial(id) {
   const m = materialById(id); if (!m) return;
@@ -546,7 +723,7 @@ let matImportRows = [];
 function importMatModal() {
   matImportRows = [];
   openModal("นำเข้าวัสดุจาก Excel", `
-    <p class="page-sub">คอลัมน์: <b>รหัส, ชื่อวัสดุ, หมวด, หน่วยใช้, หน่วยซื้อ, ตัวแปลง, จุดเตือน, จำนวนซื้อ, ราคาต่อหน่วยซื้อ</b> (บังคับแค่ชื่อวัสดุ)</p>
+    <p class="page-sub">คอลัมน์: <b>รหัส, ชื่อวัสดุ, หมวด, หน่วยใช้, หน่วยซื้อ, ตัวแปลง (1 หน่วยซื้อได้กี่หน่วยใช้), จุดเตือน, จำนวนซื้อ, ราคาต่อหน่วยซื้อ</b> (บังคับแค่ชื่อวัสดุ) • ระบบเดาประเภทจากชื่อให้ (เช่นมีคำว่า “แผ่น” = แผ่น) แก้ทีหลังได้</p>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><button class="btn-ghost" data-act="dl-mat-template">⬇ ดาวน์โหลดเทมเพลต</button><input type="file" id="matFile" accept=".xlsx,.xls,.csv"></div>
     <div id="matImportPreview"></div>
     <div class="form-actions"><button class="btn-ghost" data-act="cancel">ยกเลิก</button><button class="btn" id="doImportMat" data-act="do-import-mat" disabled>นำเข้า</button></div>`);
@@ -561,11 +738,11 @@ function importMatModal() {
         units_per_purchase: nNum(cell(r, map, "units_per_purchase")) || 1, reorder_point: nNum(cell(r, map, "reorder_point")),
         buy_qty: nNum(cell(r, map, "buy_qty")), buy_price: nNum(cell(r, map, "buy_price")),
       })).filter((r) => r.name || r.code);
-      matImportRows.forEach((r) => { const ex = findExistingMat(r.code, r.name); r._exist = ex ? ex.id : null; });
+      matImportRows.forEach((r) => { const ex = findExistingMat(r.code, r.name); r._exist = ex ? ex.id : null; r.kind = ex ? kindOf(ex) : guessKind(r.name, r.use_unit); });
       const nNew = matImportRows.filter((r) => !r._exist).length, nMatch = matImportRows.length - nNew;
-      const prev = matImportRows.slice(0, 50).map((r) => `<tr><td>${r._exist ? '<span class="pill gray">มีอยู่</span>' : '<span class="pill green">ใหม่</span>'}</td><td>${esc(r.code)}</td><td>${esc(r.name)}</td><td>${esc(r.category)}</td><td>${esc(r.use_unit || "ชิ้น")}</td><td class="num">${r.buy_qty || ""}</td><td class="num">${r.buy_price ? money(r.buy_price) : ""}</td></tr>`).join("");
+      const prev = matImportRows.slice(0, 50).map((r) => `<tr><td>${r._exist ? '<span class="pill gray">มีอยู่</span>' : '<span class="pill green">ใหม่</span>'}</td><td>${kindPill(r)}</td><td>${esc(r.name)}${r.code ? `<div class="cell-sub">${esc(r.code)}</div>` : ""}</td><td class="num">${r.buy_qty || ""}</td><td class="num">${r.buy_price ? money(r.buy_price) : ""}</td></tr>`).join("");
       document.getElementById("matImportPreview").innerHTML = matImportRows.length
-        ? `${mappingNote(map)}<p class="page-sub">พบ <b>${matImportRows.length}</b> รายการ — ใหม่ ${nNew}${nMatch ? ` • ตรงกับของเดิม ${nMatch} (จะเติมสต๊อก/ราคาให้)` : ""} (แสดง ${Math.min(50, matImportRows.length)} แถวแรก)</p><div class="table-wrap" style="max-height:240px;overflow:auto"><table><thead><tr><th></th><th>รหัส</th><th>ชื่อ</th><th>หมวด</th><th>หน่วย</th><th class="num">ซื้อ</th><th class="num">ราคา</th></tr></thead><tbody>${prev}</tbody></table></div>`
+        ? `${mappingNote(map)}<p class="page-sub">พบ <b>${matImportRows.length}</b> รายการ — ใหม่ ${nNew}${nMatch ? ` • ตรงกับของเดิม ${nMatch} (จะบันทึกเป็นล็อตซื้อเข้าให้)` : ""} (แสดง ${Math.min(50, matImportRows.length)} แถวแรก)</p><div class="table-wrap" style="max-height:240px;overflow:auto"><table><thead><tr><th></th><th>ประเภท</th><th>ชื่อ</th><th class="num">ซื้อ</th><th class="num">ราคา/หน่วยซื้อ</th></tr></thead><tbody>${prev}</tbody></table></div>`
         : `${mappingNote(map)}<p class="page-sub" style="color:var(--red)">ไม่พบคอลัมน์ชื่อ/รหัส — ตรวจหัวตารางอีกครั้ง</p>`;
       document.getElementById("doImportMat").disabled = matImportRows.length === 0;
     });
@@ -578,7 +755,8 @@ async function doImportMat() {
   for (const r of matImportRows) {
     let mid = r._exist;
     if (!mid) {
-      const { data, error } = await sb.from("materials").insert({ code: r.code || null, name: r.name || r.code, category: r.category || null, use_unit: r.use_unit || "ชิ้น", purchase_unit: r.purchase_unit || null, units_per_purchase: r.units_per_purchase, reorder_point: r.reorder_point }).select().single();
+      const sheet = r.kind === "sheet";
+      const { data, error } = await sb.from("materials").insert({ kind: r.kind, code: r.code || null, name: r.name || r.code, category: r.category || null, use_unit: sheet ? "แผ่น" : r.use_unit || KINDS[r.kind].unit, purchase_unit: sheet ? "แผ่น" : r.purchase_unit || null, units_per_purchase: sheet ? 1 : r.units_per_purchase, reorder_point: r.reorder_point }).select().single();
       if (error) { fail++; continue; }
       mid = data.id; created++;
     } else {
@@ -590,104 +768,207 @@ async function doImportMat() {
       if (r.reorder_point && !Number(ex.reorder_point)) upd.reorder_point = r.reorder_point;
       if (Object.keys(upd).length) await sb.from("materials").update(upd).eq("id", mid);
     }
-    // ดึงราคา/จำนวนในไฟล์มาเติมสต๊อก (คิดต้นทุนเฉลี่ยให้อัตโนมัติ)
-    if (r.buy_qty > 0) { await sb.from("material_purchases").insert({ material_id: mid, purchase_qty: r.buy_qty, purchase_unit_price: r.buy_price }); lots++; }
+    // ดึงราคา/จำนวนในไฟล์มาเป็นล็อตซื้อเข้า
+    if (r.buy_qty > 0) {
+      const upp = r.kind === "sheet" ? 1 : r.units_per_purchase || 1;
+      const { error } = await sb.from("material_purchases").insert({ material_id: mid, purchase_qty: r.buy_qty, units_per_pack: upp, purchase_unit_price: r.buy_price, total_cost: r.buy_qty * r.buy_price });
+      if (!error) lots++;
+    }
   }
-  closeModal(); toast(`นำเข้าสำเร็จ • ใหม่ ${created}${matched ? ` • เติมของเดิม ${matched}` : ""}${lots ? ` • เติมสต๊อก ${lots} ล็อต` : ""}${fail ? ` • ไม่สำเร็จ ${fail}` : ""}`); await loadAll();
+  closeModal(); toast(`นำเข้าสำเร็จ • ใหม่ ${created}${matched ? ` • ตรงของเดิม ${matched}` : ""}${lots ? ` • บันทึกซื้อเข้า ${lots} ล็อต` : ""}${fail ? ` • ไม่สำเร็จ ${fail}` : ""}`); await loadAll();
 }
-const dlMatTemplate = () => downloadSheet("template-วัสดุ.xlsx", [["รหัส", "ชื่อวัสดุ", "หมวด", "หน่วยใช้", "หน่วยซื้อ", "ตัวแปลง", "จุดเตือน", "จำนวนซื้อ", "ราคาต่อหน่วยซื้อ"], ["M-001", "สายหนัง", "หนัง", "ซม.", "เมตร", 100, 50, 2, 50], ["M-002", "ห่วงกุญแจ", "โลหะ", "ชิ้น", "แพ็ค", 10, 20, 5, 20]], "materials");
+const dlMatTemplate = () => downloadSheet("template-วัสดุ.xlsx", [["รหัส", "ชื่อวัสดุ", "หมวด", "หน่วยใช้", "หน่วยซื้อ", "ตัวแปลง", "จุดเตือน", "จำนวนซื้อ", "ราคาต่อหน่วยซื้อ"], ["A-001", "แผ่นอะคริลิคใส 3 มิล 30x30", "อะคริลิค", "แผ่น", "แผ่น", 1, 2, 3, 70], ["P-001", "ห่วงกลมสแตนเลส 4 มิล", "ห่วง", "ชิ้น", "แพ็ค", 200, 50, 1, 9], ["L-001", "โซ่สแตนเลส 2 มิล", "โซ่", "ซม.", "ม้วน", 500, 100, 1, 27]], "materials");
 
 /* ================= หน้า 2: SKU ================= */
+// แถวสูตร: วัสดุแบบแผ่น/สิ้นเปลือง เก็บเป็น "1 หน่วยทำได้กี่ชิ้น" (yield) ที่เหลือเก็บเป็น "ใช้กี่หน่วยต่อชิ้น" (qty)
+function bomRowFromDb(b) {
+  const k = kindOf(materialById(b.material_id)), q = Number(b.qty_per_unit);
+  return { material_id: b.material_id, qty: q, yield: Number(b.yield_per_unit) || (isYieldKind(k) && q > 0 ? Math.round((1 / q) * 100) / 100 : null) };
+}
+const bomQty = (b) => (isYieldKind(kindOf(materialById(b.material_id))) ? (b.yield > 0 ? 1 / b.yield : 0) : Number(b.qty) || 0);
+const bomCost = (b) => bomQty(b) * Number(materialById(b.material_id)?.avg_cost || 0);
+function bomLineText(b) {
+  const m = materialById(b.material_id), k = kindOf(m), u = esc(unitOf(m)), r = bomRowFromDb(b);
+  if (k === "sheet") return `1/${qty(r.yield)} แผ่น <span class="hint">(ตัดได้ ${qty(r.yield)} ชิ้น/แผ่น)</span>`;
+  if (k === "consumable") return `1/${qty(r.yield)} ${u} <span class="hint">(ทำได้ ~${qty(r.yield)} ชิ้น/${u})</span>`;
+  return `${qty(r.qty)} ${u}`;
+}
+// สูตรที่น่าจะกรอกผิด: ใช้แผ่นทั้งแผ่น (หรือมากกว่า) ต่อ 1 ชิ้น
+const bomSuspicious = (pid) => bomOf(pid).some((b) => kindOf(materialById(b.material_id)) === "sheet" && Number(b.qty_per_unit) >= 1);
 function renderSKU() {
   const rows = state.products.map((p) => {
     const uc = unitCost(p), profit = Number(p.selling_price) - uc;
     return `<tr>
       <td><b>${esc(p.sku_code)}</b></td>
-      <td><span class="link-cell" data-act="detail-sku" data-id="${p.id}">${esc(p.name)}</span> ${p.active ? "" : '<span class="pill gray">ปิดขาย</span>'}</td>
-      <td class="num">${bomOf(p.id).length} รายการ</td>
-      <td class="num">${money(uc)}</td>
+      <td><span class="link-cell" data-act="detail-sku" data-id="${p.id}">${esc(p.name)}</span> ${p.active ? "" : '<span class="pill gray">ปิดขาย</span>'} ${bomSuspicious(p.id) ? '<span class="pill amber" title="มีแผ่นอะคริลิคที่ใช้ทั้งแผ่นต่อ 1 ชิ้น">ตรวจสูตร</span>' : ""}<div class="cell-sub">${bomOf(p.id).length} วัสดุในสูตร</div></td>
+      <td class="num"><span class="link-cell" data-act="detail-sku" data-id="${p.id}">${money(uc)}</span></td>
       <td class="num">${money(p.selling_price)}</td>
       <td class="num"><span class="pill ${profit >= 0 ? "green" : "red"}">${money(profit)}</span></td>
       <td class="num"><button class="kebab-btn" data-act="kebab" data-kind="sku" data-id="${p.id}">⋯</button></td>
     </tr>`;
   }).join("");
   view.innerHTML = `
-    <div class="page-head"><div><h2>สินค้า (SKU)</h2><p class="page-sub">คลิกชื่อสินค้าเพื่อดูรายละเอียด • ปุ่ม ⋯ เพื่อแก้ไข/ลบ</p></div><button class="btn" data-act="add-sku">+ เพิ่ม SKU</button></div>
+    <div class="page-head"><div><h2>สินค้า (SKU)</h2><p class="page-sub">คลิกชื่อหรือต้นทุนเพื่อดูว่าต้นทุนมาจากอะไรบ้าง • ปุ่ม ⋯ เพื่อแก้ไข/ทำสำเนา/ลบ</p></div><button class="btn" data-act="add-sku">+ เพิ่ม SKU</button></div>
     <div class="card"><div class="table-wrap"><table>
-      <thead><tr><th>รหัส</th><th>ชื่อสินค้า</th><th class="num">วัสดุในสูตร</th><th class="num">ต้นทุน/ชิ้น</th><th class="num">ราคาขาย</th><th class="num">กำไร/ชิ้น</th><th class="num"></th></tr></thead>
-      <tbody>${rows || '<tr><td colspan="7" class="empty">ยังไม่มี SKU</td></tr>'}</tbody>
+      <thead><tr><th>รหัส</th><th>ชื่อสินค้า</th><th class="num">ต้นทุน/ชิ้น</th><th class="num">ราคาขาย</th><th class="num">กำไร/ชิ้น</th><th class="num"></th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="6" class="empty">ยังไม่มี SKU</td></tr>'}</tbody>
     </table></div></div>`;
 }
-// ฟอร์ม SKU พร้อม BOM ในตัว
+// ฟอร์ม SKU = ตัวคำนวณต้นทุน (เห็นตัวเลขสดระหว่างกรอก)
 let formBom = [];
-function skuForm(p) {
-  formBom = p ? bomOf(p.id).map((b) => ({ material_id: b.material_id, qty_per_unit: Number(b.qty_per_unit) })) : [];
-  openModal(p ? "แก้ไข SKU" : "เพิ่ม SKU", `
+function skuForm(p, copy = false) {
+  formBom = p ? bomOf(p.id).map(bomRowFromDb) : [];
+  const editId = p && !copy ? p.id : "";
+  const others = state.products.filter((x) => x.id !== editId && bomOf(x.id).length).map((x) => `<option value="${x.id}">${esc(x.sku_code)} ${esc(x.name)}</option>`).join("");
+  openModal(copy ? "ทำสำเนา SKU" : p ? "แก้ไข SKU" : "เพิ่ม SKU", `
     <div class="form-grid">
-      <div class="field"><label>รหัส SKU</label><input id="s_code" value="${esc(p?.sku_code || "")}" placeholder="KC-001"></div>
-      <div class="field"><label>ราคาขาย/ชิ้น</label><input id="s_price" type="number" step="any" value="${p?.selling_price ?? 0}"></div>
-      <div class="field full"><label>ชื่อสินค้า</label><input id="s_name" value="${esc(p?.name || "")}" placeholder="พวงกุญแจหนังรุ่น A"></div>
-      <div class="field"><label>ค่าแรง/ชิ้น</label><input id="s_labor" type="number" step="any" value="${p?.labor_cost ?? 0}"></div>
-      <div class="field"><label>ค่าเสื่อม+ค่าใช้จ่ายแฝง/ชิ้น</label><input id="s_oh" type="number" step="any" value="${p?.overhead_cost ?? 0}"></div>
-      <div class="field"><label>อัตราของเสียปกติ (%) <span class="hint">(เผื่อในต้นทุน)</span></label><input id="s_waste" type="number" step="any" value="${p?.normal_waste_pct ?? 0}"></div>
-      ${p ? `<div class="field"><label>สถานะ</label><label style="font-weight:400"><input type="checkbox" id="s_active" ${p.active ? "checked" : ""} style="width:auto;margin-right:6px">เปิดขายอยู่</label></div>` : ""}
+      <div class="field"><label>รหัส SKU</label><input id="s_code" value="${esc(p ? p.sku_code + (copy ? "-2" : "") : "")}" placeholder="KC-001"></div>
+      <div class="field"><label>ชื่อสินค้า</label><input id="s_name" value="${esc(p ? p.name + (copy ? " (สำเนา)" : "") : "")}" placeholder="พวงกุญแจอะคริลิค ลาย A"></div>
     </div>
-    <div class="section-box"><h4>สูตรวัสดุ (BOM) <span class="hint">— เลือกจากหน้าสต๊อก เพิ่มได้หลายวัสดุ</span></h4>
-      <div class="cart-line" style="grid-template-columns:2fr 90px 80px"><input id="fbom_mat" list="fbomDL" placeholder="พิมพ์ค้นหาวัสดุ…"><input id="fbom_qty" type="number" step="any" placeholder="จำนวน/ชิ้น"><button class="btn" data-act="fbom-add">เพิ่ม</button></div>
+    <div class="section-box"><h4>1. ใช้วัสดุอะไรบ้าง <span class="hint">ต่อสินค้า 1 ชิ้น</span></h4>
+      <div class="bom-add"><input id="fbom_mat" list="fbomDL" placeholder="พิมพ์ค้นหาวัสดุ แล้วกด เพิ่ม…"><button class="btn" data-act="fbom-add">+ เพิ่ม</button></div>
       ${matDatalist("fbomDL")}
+      ${others ? `<select id="fbom_copy" class="bom-copy"><option value="">⧉ คัดลอกสูตรจาก SKU อื่น…</option>${others}</select>` : ""}
       <div id="fbomList"></div>
     </div>
+    <div class="section-box"><h4>2. ค่าใช้จ่ายอื่นต่อชิ้น</h4>
+      <div class="form-grid">
+        <div class="field"><label>ค่าแรง/ชิ้น <span class="hint">เวลาทำ × ค่าแรง</span></label><input id="s_labor" type="number" step="any" value="${p?.labor_cost ?? 0}"></div>
+        <div class="field"><label>ค่าแฝง/ชิ้น <span class="hint">ไฟเลเซอร์ ค่าเสื่อม ถุง การ์ด</span></label><input id="s_oh" type="number" step="any" value="${p?.overhead_cost ?? 0}"></div>
+        <div class="field"><label>เผื่อของเสีย (%) <span class="hint">ชิ้นที่ตัดพลาด</span></label><input id="s_waste" type="number" step="any" value="${p?.normal_waste_pct ?? 0}"></div>
+        <div class="field"><label>ราคาขาย/ชิ้น</label><input id="s_price" type="number" step="any" value="${p?.selling_price ?? 0}"></div>
+      </div>
+    </div>
+    <div class="section-box sum-box"><h4>3. สรุปต้นทุน–กำไรต่อชิ้น</h4><ul class="breakdown" id="skuSummary"></ul></div>
+    ${p && !copy ? `<div class="field"><label style="font-weight:400"><input type="checkbox" id="s_active" ${p.active ? "checked" : ""} style="width:auto;margin-right:6px">เปิดขายอยู่</label></div>` : ""}
     <div class="field"><label>หมายเหตุ</label><input id="s_note" value="${esc(p?.note || "")}"></div>
-    <div class="form-actions"><button class="btn-ghost" data-act="cancel">ยกเลิก</button><button class="btn" data-act="save-sku" data-id="${p?.id || ""}">บันทึก</button></div>`);
+    <div class="form-actions"><button class="btn-ghost" data-act="cancel">ยกเลิก</button><button class="btn" data-act="save-sku" data-id="${editId}">บันทึก</button></div>`);
+  ["s_price", "s_labor", "s_oh", "s_waste"].forEach((id) => document.getElementById(id).addEventListener("input", updateSkuSummary));
+  document.getElementById("fbom_mat").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); fbomAdd(); } });
+  document.getElementById("fbom_copy")?.addEventListener("change", (e) => {
+    const src = e.target.value; e.target.value = ""; if (!src) return;
+    if (formBom.length && !confirm("แทนที่วัสดุในสูตรตอนนี้ด้วยสูตรที่เลือก?")) return;
+    formBom = bomOf(src).map(bomRowFromDb); renderFormBom();
+  });
   renderFormBom();
 }
 function renderFormBom() {
   const el = document.getElementById("fbomList"); if (!el) return;
-  let total = 0;
-  const rows = formBom.map((b, i) => {
-    const m = materialById(b.material_id); const cost = Number(b.qty_per_unit) * Number(m?.avg_cost || 0); total += cost;
-    return `<div class="cart-line" style="grid-template-columns:2fr 90px 90px 30px"><span>${esc(m?.name || "?")}</span><span class="ro">${qty(b.qty_per_unit)} ${esc(m?.use_unit || "")}</span><span class="ro">${money(cost)}</span><button class="mini-x" data-act="fbom-del" data-i="${i}">×</button></div>`;
-  }).join("");
-  el.innerHTML = (rows || '<p class="page-sub" style="margin:4px 0">ยังไม่มีวัสดุในสูตร</p>') + (formBom.length ? `<div class="cart-line" style="grid-template-columns:2fr 90px 90px 30px;font-weight:700;border-top:1px solid var(--line);padding-top:6px"><span>รวมต้นทุนวัสดุ</span><span></span><span class="ro">${money(total)}</span><span></span></div>` : "");
+  if (!formBom.length) { el.innerHTML = '<p class="page-sub" style="margin:6px 0 0">ยังไม่มีวัสดุ — พิมพ์ค้นหาด้านบน แล้วกด “เพิ่ม”</p>'; updateSkuSummary(); return; }
+  el.innerHTML = formBom.map((b, i) => {
+    const m = materialById(b.material_id), k = kindOf(m), u = esc(unitOf(m));
+    const numIn = (field, v) => `<input class="num-in" data-bom="${field}" data-i="${i}" type="number" step="any" min="0" value="${v ?? ""}" placeholder="?">`;
+    const input = k === "sheet" ? `1 แผ่นตัดได้ ${numIn("yield", b.yield)} ชิ้น <button class="btn-sm" data-act="fbom-calc" data-i="${i}">📐 คำนวณจากขนาด</button>`
+      : k === "consumable" ? `1 ${u} ทำได้ประมาณ ${numIn("yield", b.yield)} ชิ้น`
+      : `ใช้ ${numIn("qty", b.qty)} ${u}`;
+    return `<div class="bom-row">
+      <div class="bom-name">${kindPill(m)} ${esc(m?.name || "?")}<div class="cell-sub">${money4(m?.avg_cost)} ต่อ${u}</div></div>
+      <div class="bom-input">${input}</div>
+      <div class="bom-cost" id="fbom_cost_${i}"></div>
+      <button class="mini-x" data-act="fbom-del" data-i="${i}" title="เอาออก">×</button>
+      <div class="bom-calc" id="fbom_calc_${i}" hidden></div>
+    </div>`;
+  }).join("") + `<div class="bom-total"><span>รวมค่าวัสดุต่อชิ้น</span><span id="fbom_total"></span></div>`;
+  el.querySelectorAll("[data-bom]").forEach((inp) => inp.addEventListener("input", (e) => { formBom[Number(e.target.dataset.i)][e.target.dataset.bom] = e.target.value === "" ? null : Number(e.target.value); updateSkuSummary(); }));
+  updateSkuSummary();
+}
+function updateSkuSummary() {
+  let mat = 0;
+  formBom.forEach((b, i) => {
+    const c = bomCost(b), el = document.getElementById("fbom_cost_" + i); mat += c;
+    if (el) el.innerHTML = bomQty(b) > 0 ? money(c) : '<span class="warn-txt">ใส่จำนวน</span>';
+  });
+  const tot = document.getElementById("fbom_total"); if (tot) tot.textContent = money(mat);
+  const el = document.getElementById("skuSummary"); if (!el) return;
+  const labor = Number(val("s_labor")) || 0, oh = Number(val("s_oh")) || 0, w = Number(val("s_waste")) || 0, price = Number(val("s_price")) || 0;
+  const cost = mat + labor + oh, wcost = w > 0 && w < 100 ? cost / (1 - w / 100) : cost, profit = price - cost;
+  const fees = (state.settings.channels || []).filter((c) => Number(c.fee_percent) > 0)
+    .map((c) => { const pf = profit - (price * Number(c.fee_percent)) / 100; return `<li><span class="hint">ถ้าขายผ่าน ${esc(c.name)} (ค่าธรรมเนียม ${qty(c.fee_percent)}%)</span><span class="ro" style="color:${pf >= 0 ? "var(--green)" : "var(--red)"}">${money(pf)}</span></li>`; }).join("");
+  el.innerHTML = `
+    <li><span>ค่าวัสดุ</span><span class="ro">${money(mat)}</span></li>
+    <li><span>+ ค่าแรง</span><span class="ro">${money(labor)}</span></li>
+    <li><span>+ ค่าแฝง</span><span class="ro">${money(oh)}</span></li>
+    <li class="total"><span>ต้นทุน/ชิ้น</span><span class="ro">${money(cost)}</span></li>
+    ${w > 0 ? `<li><span>ต้นทุนถ้าเผื่อของเสีย ${qty(w)}%</span><span class="ro">${money(wcost)}</span></li>` : ""}
+    <li><span>ราคาขาย</span><span class="ro">${money(price)}</span></li>
+    <li class="total"><span>กำไร/ชิ้น</span><span class="ro" style="color:${profit >= 0 ? "var(--green)" : "var(--red)"}">${money(profit)} (${pct(price ? (profit / price) * 100 : 0)})</span></li>
+    ${fees}`;
 }
 function fbomAdd() {
-  const m = resolveMat(val("fbom_mat")), q = Number(val("fbom_qty"));
+  const m = resolveMat(val("fbom_mat"));
   if (!m) return toast("เลือกวัสดุจากรายการ", true);
-  if (!q || q <= 0) return toast("ใส่จำนวนต่อชิ้น", true);
-  const ex = formBom.find((b) => b.material_id === m.id);
-  if (ex) ex.qty_per_unit = q; else formBom.push({ material_id: m.id, qty_per_unit: q });
-  document.getElementById("fbom_mat").value = ""; document.getElementById("fbom_qty").value = "";
+  if (formBom.some((b) => b.material_id === m.id)) return toast("วัสดุนี้อยู่ในสูตรแล้ว", true);
+  formBom.push({ material_id: m.id, qty: kindOf(m) === "piece" ? 1 : null, yield: null });
+  document.getElementById("fbom_mat").value = "";
   renderFormBom();
+  document.querySelector(`[data-bom][data-i="${formBom.length - 1}"]`)?.focus();
 }
 function fbomDel(i) { formBom.splice(i, 1); renderFormBom(); }
+// ตัวช่วยประมาณจำนวนชิ้นต่อแผ่น จากขนาดแผ่น/ชิ้นงาน (วางเป็นตาราง ลองหมุน 90°)
+function fbomCalc(i) {
+  const box = document.getElementById("fbom_calc_" + i); if (!box) return;
+  if (!box.hidden) { box.hidden = true; return; }
+  const m = materialById(formBom[i].material_id);
+  box.hidden = false;
+  box.innerHTML = `<div class="calc-box">
+    <div class="calc-grid">
+      <label>แผ่น <input id="cW_${i}" type="number" step="any" value="${m?.sheet_w_cm ?? ""}" placeholder="กว้าง"> × <input id="cH_${i}" type="number" step="any" value="${m?.sheet_h_cm ?? ""}" placeholder="ยาว"> ซม.</label>
+      <label>ชิ้นงาน <input id="cw_${i}" type="number" step="any" placeholder="กว้าง"> × <input id="ch_${i}" type="number" step="any" placeholder="สูง"> ซม.</label>
+      <label>เว้นระยะ <input id="cg_${i}" type="number" step="any" value="0.3"> ซม.</label>
+    </div>
+    <div id="cOut_${i}" class="page-sub">กรอกขนาดแผ่นและขนาดชิ้นงาน (ขอบนอกสุดของชิ้น)</div>
+  </div>`;
+  const calc = () => {
+    const W = Number(val("cW_" + i)), H = Number(val("cH_" + i)), w = Number(val("cw_" + i)), h = Number(val("ch_" + i)), g = Number(val("cg_" + i)) || 0;
+    const out = document.getElementById("cOut_" + i);
+    if (!(W > 0 && H > 0 && w > 0 && h > 0)) { out.textContent = "กรอกขนาดแผ่นและขนาดชิ้นงาน (ขอบนอกสุดของชิ้น)"; return; }
+    const fit = (a, b) => Math.floor((W + g) / (a + g)) * Math.floor((H + g) / (b + g));
+    const n = Math.max(fit(w, h), fit(h, w));
+    out.innerHTML = `ตัดได้ประมาณ <b style="font-size:15px">${n}</b> ชิ้น/แผ่น ${n > 0 ? `<button class="btn-sm" data-act="fbom-use-calc" data-i="${i}" data-n="${n}">ใช้ค่านี้</button>` : ""}<br><span class="hint">ถ้ารูปทรงไม่เป็นสี่เหลี่ยมหรือจัดเรียงแบบอื่น จำนวนจริงอาจต่างไป — ใส่ตามไฟล์เลเซอร์จริงได้เลย</span>`;
+  };
+  box.querySelectorAll("input").forEach((x) => x.addEventListener("input", calc));
+  calc();
+  document.getElementById("cw_" + i).focus();
+}
+function fbomUseCalc(i, n) {
+  const m = materialById(formBom[i].material_id), W = Number(val("cW_" + i)), H = Number(val("cH_" + i));
+  // จำขนาดแผ่นไว้ที่วัสดุ ครั้งหน้าไม่ต้องกรอกใหม่
+  if (m && W > 0 && H > 0 && (Number(m.sheet_w_cm) !== W || Number(m.sheet_h_cm) !== H)) {
+    m.sheet_w_cm = W; m.sheet_h_cm = H;
+    sb.from("materials").update({ sheet_w_cm: W, sheet_h_cm: H }).eq("id", m.id).then(({ error }) => error && console.error(error));
+  }
+  formBom[i].yield = n; renderFormBom();
+}
 async function saveSKU(id) {
   const payload = { sku_code: val("s_code").trim(), name: val("s_name").trim(), selling_price: Number(val("s_price")) || 0, labor_cost: Number(val("s_labor")) || 0, overhead_cost: Number(val("s_oh")) || 0, normal_waste_pct: Number(val("s_waste")) || 0, note: val("s_note").trim() || null };
   if (id) payload.active = document.getElementById("s_active")?.checked ?? true;
   if (!payload.sku_code || !payload.name) return toast("กรุณาใส่รหัสและชื่อสินค้า", true);
-  let pid = id;
-  if (id) { const { error } = await sb.from("products").update(payload).eq("id", id); if (error) return toast(error.message, true); }
-  else { const { data, error } = await sb.from("products").insert(payload).select().single(); if (error) return toast(error.message, true); pid = data.id; }
-  // ซิงก์ BOM: ลบเดิมทั้งหมดแล้วใส่ใหม่ (ไม่กระทบสต๊อก)
-  await sb.from("product_materials").delete().eq("product_id", pid);
-  if (formBom.length) await sb.from("product_materials").insert(formBom.map((b) => ({ product_id: pid, material_id: b.material_id, qty_per_unit: b.qty_per_unit })));
+  const missing = formBom.filter((b) => !(bomQty(b) > 0)).map((b) => materialById(b.material_id)?.name);
+  if (missing.length) return toast("ยังไม่ได้ใส่จำนวนของ: " + missing.join(", "), true);
+  const bom = formBom.map((b) => ({ material_id: b.material_id, qty_per_unit: bomQty(b), yield_per_unit: isYieldKind(kindOf(materialById(b.material_id))) ? b.yield : null }));
+  // บันทึก SKU + สูตรใน transaction เดียว — ถ้าพลาด สูตรเดิมไม่หาย
+  const { error } = await sb.rpc("save_product", { p_id: id || null, p: payload, p_bom: bom });
+  if (error) return toast(/sku_code/.test(error.message) ? "รหัส SKU นี้มีอยู่แล้ว" : error.message, true);
   closeModal(); toast(id ? "แก้ไข SKU แล้ว" : "เพิ่ม SKU แล้ว"); await loadAll();
 }
 function detailSKU(id) {
   const p = productById(id);
-  const lines = bomOf(id).map((b) => { const m = materialById(b.material_id); return `<li><span>${esc(m?.name || "?")} — ${qty(b.qty_per_unit)} ${esc(m?.use_unit || "")} × ${money(m?.avg_cost)}</span><span class="ro">${money(Number(b.qty_per_unit) * Number(m?.avg_cost || 0))}</span></li>`; }).join("");
+  const lines = bomOf(id).map((b) => { const m = materialById(b.material_id); return `<li><span>${kindPill(m)} ${esc(m?.name || "?")}<div class="cell-sub">${bomLineText(b)} × ${money4(m?.avg_cost)}/${esc(unitOf(m))}</div></span><span class="ro">${money(Number(b.qty_per_unit) * Number(m?.avg_cost || 0))}</span></li>`; }).join("");
   const matCost = unitMaterialCost(id), uc = unitCost(p), profit = Number(p.selling_price) - uc, wadj = wasteAdjCost(p);
   openModal("รายละเอียดสินค้า — " + p.sku_code + " " + p.name, `
     ${p.active ? "" : '<p><span class="pill gray">ปิดขาย</span></p>'}
+    ${bomSuspicious(id) ? '<p class="calc-box" style="background:var(--amber-bg);border-color:#f3dcb0">⚠ มีแผ่นอะคริลิคที่คิดเป็น “ทั้งแผ่นต่อ 1 ชิ้น” — กด “แก้ไข” แล้วใส่ว่า 1 แผ่นตัดได้กี่ชิ้น</p>' : ""}
     <ul class="breakdown">
       ${lines || '<li><span class="page-sub">ยังไม่มีวัสดุในสูตร</span><span></span></li>'}
-      <li><span>รวมต้นทุนวัสดุ</span><span class="ro">${money(matCost)}</span></li>
+      <li><span>รวมค่าวัสดุ</span><span class="ro">${money(matCost)}</span></li>
       <li><span>+ ค่าแรง</span><span class="ro">${money(p.labor_cost)}</span></li>
-      <li><span>+ ค่าเสื่อม+ค่าใช้จ่ายแฝง</span><span class="ro">${money(p.overhead_cost)}</span></li>
+      <li><span>+ ค่าแฝง</span><span class="ro">${money(p.overhead_cost)}</span></li>
       <li class="total"><span>ต้นทุนรวม/ชิ้น</span><span class="ro">${money(uc)}</span></li>
       ${Number(p.normal_waste_pct) > 0 ? `<li><span>ต้นทุน/ชิ้น (เผื่อของเสีย ${qty(p.normal_waste_pct)}%)</span><span class="ro">${money(wadj)}</span></li>` : ""}
       <li><span>ราคาขาย</span><span class="ro">${money(p.selling_price)}</span></li>
       <li class="total"><span>กำไร/ชิ้น</span><span class="ro" style="color:${profit >= 0 ? "var(--green)" : "var(--red)"}">${money(profit)} (${pct(p.selling_price ? (profit / p.selling_price) * 100 : 0)})</span></li>
     </ul>
+    <p class="hint">ราคาวัสดุ = เงินที่จ่ายรวมทุกล็อต ÷ จำนวนที่ได้ (ดู/แก้ได้ที่หน้าสต๊อก → กดที่ราคา)</p>
     ${p.note ? `<p class="page-sub">หมายเหตุ: ${esc(p.note)}</p>` : ""}
     <div class="form-actions"><button class="btn-ghost" data-act="edit-sku" data-id="${p.id}">แก้ไข</button><button class="btn" data-act="cancel">ปิด</button></div>`);
 }
@@ -704,7 +985,7 @@ function renderPricing() {
     const uc = unitCost(p), profit = Number(p.selling_price) - uc, margin = p.selling_price ? (profit / p.selling_price) * 100 : 0;
     return `<tr>
       <td><b>${esc(p.sku_code)}</b> ${esc(p.name)}</td>
-      <td class="num">${money(unitMaterialCost(p.id))}</td><td class="num">${money(p.labor_cost)}</td><td class="num">${money(p.overhead_cost)}</td>
+      <td class="num"><span class="link-cell" data-act="detail-sku" data-id="${p.id}">${money(unitMaterialCost(p.id))}</span>${bomSuspicious(p.id) ? ' <span class="pill amber">ตรวจสูตร</span>' : ""}</td><td class="num">${money(p.labor_cost)}</td><td class="num">${money(p.overhead_cost)}</td>
       <td class="num"><b>${money(uc)}</b></td><td class="num">${Number(p.normal_waste_pct) > 0 ? money(wasteAdjCost(p)) : "—"}</td>
       <td class="num">${money(p.selling_price)}</td><td class="num"><span class="pill ${profit >= 0 ? "green" : "red"}">${money(profit)}</span></td><td class="num">${pct(margin)}</td>
     </tr>`;
@@ -716,7 +997,7 @@ function renderPricing() {
     <td class="num"><button class="kebab-btn" data-act="kebab" data-kind="order" data-id="${o.id}">⋯</button></td>
   </tr>`).join("");
   view.innerHTML = `
-    <div class="page-head"><div><h2>ราคาซื้อขาย</h2><p class="page-sub">ต้นทุน/กำไรคำนวณสดจากหน้าสต๊อก • คลิกเวลาออเดอร์เพื่อดูรายละเอียด</p></div>
+    <div class="page-head"><div><h2>ราคาซื้อขาย</h2><p class="page-sub">ค่าวัสดุดึงจากราคาในหน้าสต๊อก (เงินที่จ่ายรวมทุกล็อต ÷ จำนวนที่ได้) • กดที่ค่าวัสดุเพื่อดูที่มา • ออเดอร์ที่บันทึกแล้วจะล็อกต้นทุน ณ วันขายไว้</p></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-ghost" data-act="manage-channels">⚙ ช่องทางขาย</button><button class="btn-ghost" data-act="import-preorder">⬆ นำเข้าพรีออเดอร์</button><button class="btn" data-act="new-sale">+ บันทึกการขาย</button></div>
     </div>
     <div class="card"><div class="card-head">ตารางต้นทุน–กำไร ต่อชิ้น</div><div class="table-wrap"><table>
@@ -1053,9 +1334,9 @@ function detailProdSales(pid) {
 function showKebab(btn) {
   const kind = btn.dataset.kind, id = btn.dataset.id;
   const items = kind === "mat"
-    ? [{ label: "+ เติมสต๊อก", act: "restock" }, { label: "ประวัติ", act: "history" }, { label: "แก้ไข", act: "edit-mat" }, { label: "ลบ", act: "del-mat", danger: true }]
+    ? [{ label: "+ ซื้อเข้า", act: "restock" }, { label: "ประวัติการซื้อ / แก้ล็อต", act: "history" }, { label: "แก้ไขวัสดุ", act: "edit-mat" }, { label: "ลบ", act: "del-mat", danger: true }]
     : kind === "sku"
-    ? [{ label: "ดูรายละเอียด", act: "detail-sku" }, { label: "แก้ไข", act: "edit-sku" }, { label: "ลบ", act: "del-sku", danger: true }]
+    ? [{ label: "ดูรายละเอียด", act: "detail-sku" }, { label: "แก้ไข", act: "edit-sku" }, { label: "ทำสำเนา", act: "dup-sku" }, { label: "ลบ", act: "del-sku", danger: true }]
     : [{ label: "ดูรายละเอียด", act: "detail-order" }, { label: "แก้ไข", act: "edit-order" }, { label: "ลบ", act: "del-order", danger: true }];
   const pop = document.getElementById("kebabPop");
   pop.innerHTML = items.map((i) => `<button data-act="${i.act}" data-id="${id}" class="${i.danger ? "danger" : ""}">${i.label}</button>`).join("");
@@ -1075,23 +1356,28 @@ document.body.addEventListener("click", (e) => {
   if (act === "kebab") { showKebab(el); return; }
   if (inPop) closeKebab();
   const A = {
-    "add-mat": () => openModal("เพิ่มวัสดุ", materialForm(null)),
-    "edit-mat": () => openModal("แก้ไขวัสดุ", materialForm(materialById(id))),
+    "add-mat": () => openMaterialForm(null),
+    "edit-mat": () => openMaterialForm(materialById(id)),
     "save-mat": () => saveMaterial(id),
-    "restock": () => { const m = materialById(id); openModal("เติมสต๊อก", restockForm(m)); bindRestockPreview(m); },
+    "restock": () => purchaseForm(materialById(id), null),
     "del-mat": () => delMaterial(id),
-    "save-restock": () => saveRestock(id),
+    "save-purchase": () => savePurchase(id, el.dataset.lot || null),
+    "edit-lot": () => { const lot = state.purchases.find((p) => p.id === id); if (lot) purchaseForm(materialById(lot.material_id), lot); },
+    "del-lot": () => delPurchase(id),
     "history": () => showHistory(id),
     "import-mat": () => importMatModal(),
     "do-import-mat": () => doImportMat(),
     "dl-mat-template": () => dlMatTemplate(),
     "add-sku": () => skuForm(null),
     "edit-sku": () => skuForm(productById(id)),
+    "dup-sku": () => skuForm(productById(id), true),
     "save-sku": () => saveSKU(id),
     "detail-sku": () => detailSKU(id),
     "del-sku": () => delSKU(id),
     "fbom-add": () => fbomAdd(),
     "fbom-del": () => fbomDel(Number(el.dataset.i)),
+    "fbom-calc": () => fbomCalc(Number(el.dataset.i)),
+    "fbom-use-calc": () => fbomUseCalc(Number(el.dataset.i), Number(el.dataset.n)),
     "manage-channels": () => manageChannels(),
     "ch-add": () => chAdd(),
     "ch-del": () => chDel(Number(el.dataset.i)),
@@ -1117,10 +1403,81 @@ document.body.addEventListener("click", (e) => {
   };
   if (A[act]) A[act]();
 });
-function bindRestockPreview(m) { ["r_qty", "r_price"].forEach((id) => document.getElementById(id)?.addEventListener("input", () => updateRestockPreview(m))); }
 window.addEventListener("resize", closeKebab);
 
-loadAll();
+// ---------- ล็อกอิน (Supabase Auth) ----------
+// ต้องล็อกอินก่อนถึงจะเห็นข้อมูล — ฐานข้อมูลอนุญาตเฉพาะอีเมลที่อยู่ในตาราง team_members
+let currentUserId = null;
+const loginMsg = (text, kind = "err") => {
+  const el = document.getElementById("loginMsg");
+  el.hidden = !text; el.textContent = text || ""; el.className = "login-msg " + kind;
+};
+function authErrorText(e) {
+  const m = (e?.message || "").toLowerCase();
+  if (m.includes("invalid login credentials")) return "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
+  if (m.includes("email not confirmed")) return "ยังไม่ได้ยืนยันอีเมล — กดลิงก์ยืนยันในอีเมลก่อน";
+  if (m.includes("rate limit") || m.includes("too many")) return "ลองหลายครั้งเกินไป รอสักครู่แล้วลองใหม่";
+  if (m.includes("failed to fetch") || m.includes("network")) return "เชื่อมต่ออินเทอร์เน็ตไม่ได้";
+  return "เข้าสู่ระบบไม่สำเร็จ: " + (e?.message || e);
+}
+function showLogin(msg, kind) {
+  currentUserId = null;
+  closeModal();
+  document.getElementById("appShell").hidden = true;
+  document.getElementById("loginScreen").hidden = false;
+  document.getElementById("loginFields").hidden = false;
+  document.getElementById("loginSignOut").hidden = true;
+  document.getElementById("loginBtn").disabled = false;
+  loginMsg(msg, kind);
+  // ล้างข้อมูลร้านออกจากหน่วยความจำของหน้า
+  Object.assign(state, { materials: [], purchases: [], products: [], bom: [], orders: [], items: [], usages: [], settings: {} });
+  view.innerHTML = `<div class="loading">กำลังโหลด…</div>`;
+}
+async function enterApp(session) {
+  if (currentUserId === session.user.id) return;
+  currentUserId = session.user.id;
+  const { data: allowed, error } = await sb.rpc("is_team_member");
+  if (error || !allowed) {
+    showLogin(error ? authErrorText(error)
+      : `บัญชี ${session.user.email} ยังไม่ได้รับสิทธิ์ใช้งาน — ให้เจ้าของร้านเพิ่มอีเมลนี้ในตาราง team_members`, "warn");
+    currentUserId = session.user.id;
+    document.getElementById("loginFields").hidden = true;
+    document.getElementById("loginSignOut").hidden = false;
+    return;
+  }
+  document.getElementById("loginScreen").hidden = true;
+  document.getElementById("appShell").hidden = false;
+  document.getElementById("userEmail").textContent = session.user.email || "";
+  document.getElementById("userEmail").title = session.user.email || "";
+  await loadAll();
+}
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("loginBtn");
+  btn.disabled = true; loginMsg("");
+  const { data, error } = await sb.auth.signInWithPassword({
+    email: val("loginEmail").trim(), password: val("loginPassword"),
+  });
+  btn.disabled = false;
+  if (error) return loginMsg(authErrorText(error));
+  document.getElementById("loginPassword").value = "";
+  await enterApp(data.session);
+});
+async function signOut() {
+  await sb.auth.signOut();
+  showLogin("ออกจากระบบแล้ว", "warn");
+}
+document.getElementById("signOutBtn").onclick = signOut;
+document.getElementById("loginSignOut").onclick = signOut;
+
+// จำการล็อกอินไว้ในเบราว์เซอร์นี้ (เปิดหน้าใหม่ไม่ต้องล็อกอินซ้ำ)
+sb.auth.onAuthStateChange((event, session) => {
+  // เรียก Supabase ต่อใน setTimeout เพื่อไม่ให้ค้างภายใน callback ของ auth
+  setTimeout(() => {
+    if (event === "SIGNED_OUT" || !session) { if (currentUserId !== null || event === "INITIAL_SESSION") showLogin(); return; }
+    if (event === "INITIAL_SESSION" || event === "SIGNED_IN") enterApp(session);
+  }, 0);
+});
   </script>
 </body>
 </html>
